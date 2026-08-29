@@ -9,10 +9,12 @@ use base64::Engine;
 use tauri::webview::PageLoadEvent;
 use tauri_plugin_updater::UpdaterExt;
 use tauri::{
-    AppHandle, LogicalPosition, Manager, RunEvent, TitleBarStyle, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder,
+    AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
 };
 use url::Url;
+
+#[cfg(target_os = "macos")]
+use tauri::{LogicalPosition, TitleBarStyle};
 
 const DSH_INSTALL: &str = "npm install -g @deepseek-ai/dsh@0.1.1-rc.2";
 const READY_TIMEOUT: Duration = Duration::from_secs(90);

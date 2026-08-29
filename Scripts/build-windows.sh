@@ -40,13 +40,10 @@ echo "==> Building Windows bundle on $HOST"
 # The signing key is referenced by path for this one build; it is not persisted
 # on the Windows machine beyond the build itself.
 scp -q "$WIN_KEY_FILE" "$HOST:C:/Users/cmcel/_kyber_signing.key"
-ssh "$HOST" "
-  cd C:\\Users\\cmcel\\src\\KyberCode
-  npm install
-  set TAURI_SIGNING_PRIVATE_KEY_PATH=C:\\Users\\cmcel\\_kyber_signing.key
-  set TAURI_SIGNING_PRIVATE_KEY_PASSWORD=
-  npx tauri build
-"
+# The build runs under PowerShell because the multiline signing key cannot be
+# passed through cmd.exe environment variables.
+scp -q Scripts/build-windows.ps1 "$HOST:C:/Users/cmcel/src/KyberCode/build-windows.ps1"
+ssh "$HOST" "powershell -ExecutionPolicy Bypass -File C:\\Users\\cmcel\\src\\KyberCode\\build-windows.ps1" 2>&1 | tail -25
 ssh "$HOST" "del C:\\Users\\cmcel\\_kyber_signing.key"
 
 echo "==> Fetching Windows artifacts"
