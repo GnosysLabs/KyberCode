@@ -8,17 +8,31 @@
   </head>
   <body>
     <main class="app-frame" aria-label="Kyber">
-      <div class="window-drag-region" data-tauri-drag-region aria-hidden="true"></div>
-
-      <div class="brand-lockup">
+      <header class="chrome">
+        <div class="window-drag-region" data-tauri-drag-region aria-hidden="true"></div>
         <img
-          class="kyber-mark"
+          class="chrome-mark"
           src="assets/kyber-logo.png"
           alt="Kyber"
           width="1184"
           height="362"
         />
-      </div>
+      </header>
+
+      <section class="stage">
+        <div class="brand-lockup" id="lockup">
+          <img
+            class="kyber-mark"
+            src="assets/kyber-logo.png"
+            alt=""
+            width="1184"
+            height="362"
+          />
+          <p class="status" id="status">Starting DeepSeek Harness…</p>
+        </div>
+        <pre class="error" id="error" hidden></pre>
+      </section>
     </main>
+    <script src="app.js"></script>
   </body>
 </html>
