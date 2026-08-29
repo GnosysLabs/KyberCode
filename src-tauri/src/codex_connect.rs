@@ -3,8 +3,12 @@ use serde_json::Value as Json;
 use serde_yaml::Value as Yaml;
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::process::Stdio;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use crate::dsh_launch::{self, DshLaunch};
+use crate::host_path;
 
 pub const PACKAGE_NAME: &str = "dsh-codex-connect";
 pub const PACKAGE_SPEC: &str = "dsh-codex-connect@0.1.0-alpha.4.21";
@@ -60,39 +64,48 @@ pub fn without_pi_ai_openai_codex(settings_yaml: &str) -> Result<Option<String>,
         .map_err(|error| format!("could not rewrite settings.yaml: {error}"))
 }
 
+const INSTALL_TIMEOUT: Duration = Duration::from_secs(90);
+
 pub fn ensure(dsh_home: &Path, path: &str, launch: &DshLaunch) -> Result<(), String> {
     let manifest_path = dsh_home.join("profiles/web/package.json");
     let already = std::fs::read_to_string(&manifest_path)
         .ok()
         .is_some_and(|body| is_bundled(&body));
-    if !already {
-        install(dsh_home, path, launch)?;
+    if !already && !launch.uses_npm() {
+        let _ = install(dsh_home, path, launch);
     }
     clear_conflicting_route(&dsh_home.join("settings.yaml"))
 }
 
 fn install(dsh_home: &Path, path: &str, launch: &DshLaunch) -> Result<(), String> {
-    let output = dsh_launch::command(
+    let mut command = dsh_launch::command(
         launch,
         &["plugin", "--profile", "web", "add", PACKAGE_SPEC],
         dsh_home,
         path,
-    )
-        .output()
-        .map_err(|error| {
-            format!(
-                "failed to install {PACKAGE_SPEC}: {error}\nCodex Connect needs `dsh` and `pnpm` on PATH."
-            )
-        })?;
-    if output.status.success() {
-        return Ok(());
+    );
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command.spawn().map_err(|error| {
+        format!(
+            "failed to install {PACKAGE_SPEC}: {error}\nCodex Connect needs `dsh` and `pnpm` on PATH."
+        )
+    })?;
+    let started = Instant::now();
+    loop {
+        if let Ok(Some(status)) = child.try_wait() {
+            if status.success() {
+                return Ok(());
+            }
+            return Err(format!(
+                "failed to install {PACKAGE_SPEC} ({status})"
+            ));
+        }
+        if started.elapsed() > INSTALL_TIMEOUT {
+            host_path::kill_tree(&mut child);
+            return Err(format!("timed out installing {PACKAGE_SPEC}"));
+        }
+        thread::sleep(Duration::from_millis(200));
     }
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    Err(format!(
-        "failed to install {PACKAGE_SPEC} ({})\n{stdout}{stderr}",
-        output.status
-    ))
 }
 
 fn clear_conflicting_route(settings_path: &Path) -> Result<(), String> {
@@ -141,5 +154,15 @@ agent-default-model:
         assert!(next.contains("openrouter:"));
         assert!(next.contains("provider: openai-codex"));
         assert!(without_pi_ai_openai_codex(&next).unwrap().is_none());
+    }
+
+    #[test]
+    fn npm_launch_skips_plugin_add() {
+        let dir = std::env::temp_dir().join("kyber-codex-skip");
+        let _ = std::fs::create_dir_all(&dir);
+        let launch = DshLaunch::Binary(std::path::PathBuf::from("npx.cmd"));
+        assert!(launch.uses_npm());
+        assert!(ensure(&dir, "/bin", &launch).is_ok());
+        assert!(!dir.join("profiles/web/package.json").exists());
     }
 }

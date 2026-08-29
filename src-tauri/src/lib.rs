@@ -20,7 +20,7 @@ mod host_path;
 #[cfg(target_os = "macos")]
 use tauri::{LogicalPosition, TitleBarStyle};
 
-const DSH_INSTALL: &str = "npm install -g @deepseek-ai/dsh@0.1.1-rc.2";
+const DSH_INSTALL: &str = "pnpm add -g @deepseek-ai/dsh@0.1.1-rc.2";
 const READY_TIMEOUT: Duration = Duration::from_secs(90);
 const LOGO_PNG: &[u8] = include_bytes!("../../src/assets/kyber-logo.png");
 const CRYSTAL_PNG: &[u8] = include_bytes!("../../src/assets/kyber-crystal.png");
@@ -60,27 +60,7 @@ impl Drop for DshChild {
 }
 
 fn kill_tree(child: &mut Child) {
-    let pid = child.id();
-    #[cfg(unix)]
-    {
-        let _ = Command::new("kill")
-            .args(["-TERM", &format!("-{pid}")])
-            .status();
-        let _ = child.wait();
-    }
-    #[cfg(windows)]
-    {
-        let mut kill = Command::new("taskkill");
-        kill.args(["/F", "/T", "/PID", &pid.to_string()]);
-        host_path::hide_window(&mut kill);
-        let _ = kill.status();
-        let _ = child.wait();
-    }
-    #[cfg(not(any(unix, windows)))]
-    {
-        let _ = child.kill();
-        let _ = child.wait();
-    }
+    host_path::kill_tree(child);
 }
 
 fn resolve_dsh_home(app: &AppHandle) -> Result<PathBuf, String> {
@@ -278,13 +258,10 @@ fn boot_dsh(app: &AppHandle, window: &WebviewWindow, dsh: &DshChild) -> Result<(
     let bundled = std::fs::read_to_string(dsh_home.join("profiles/web/package.json"))
         .ok()
         .is_some_and(|body| codex_connect::is_bundled(&body));
-    if !bundled {
+    if !bundled && !launch.uses_npm() {
         eval_status(window, "Installing Codex Connect…");
     }
-    if let Err(error) = codex_connect::ensure(&dsh_home, &path, &launch) {
-        eval_status(window, "");
-        return Err(error);
-    }
+    let _ = codex_connect::ensure(&dsh_home, &path, &launch);
     eval_status(window, "");
     let mut child = spawn_dsh(&dsh_home, &path, &launch).map_err(|error| {
         format!("failed to spawn dsh web: {error}\nInstall with:\n{DSH_INSTALL}")

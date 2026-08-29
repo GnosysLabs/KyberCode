@@ -37,16 +37,10 @@ echo "==> Syncing working tree"
 git archive HEAD | ssh "$HOST" "cd C:\\Users\\cmcel\\src\\KyberCode && tar xf -"
 
 echo "==> Building Windows bundle on $HOST"
-# The signing key is referenced by path for this one build; it is not persisted
-# on the Windows machine beyond the build itself.
-scp -q "$WIN_KEY_FILE" "$HOST:C:/Users/cmcel/_kyber_signing.key"
-# The build runs under PowerShell because the multiline signing key cannot be
-# passed through cmd.exe environment variables.
 scp -q Scripts/build-windows.ps1 "$HOST:C:/Users/cmcel/src/KyberCode/build-windows.ps1"
 # Do not pipe the SSH session through tail/head — a full pipe buffer
-# deadlocks npx tauri build and leaves the installer unsigned.
+# deadlocks npx tauri build.
 ssh "$HOST" "powershell -ExecutionPolicy Bypass -File C:\\Users\\cmcel\\src\\KyberCode\\build-windows.ps1"
-ssh "$HOST" "del C:\\Users\\cmcel\\_kyber_signing.key"
 
 echo "==> Fetching Windows artifacts"
 rm -rf .release-win && mkdir -p .release-win
@@ -62,11 +56,22 @@ scp -q "$HOST:C:/Users/cmcel/Kyber.Code_${VERSION}_x64_en-US.msi" .release-win/ 
 ls .release-win/
 
 SETUP_EXE=$(find .release-win -name "*-setup.exe" | head -1)
-SETUP_SIG=$(find .release-win -name "*-setup.exe.sig" | head -1)
-
-if [ -z "$SETUP_EXE" ] || [ -z "$SETUP_SIG" ]; then
-  echo "error: expected signed NSIS setup exe (updater artifact)" >&2
+if [ -z "$SETUP_EXE" ]; then
+  echo "error: expected NSIS setup exe" >&2
   ssh "$HOST" "dir C:\\Users\\cmcel\\src\\KyberCode\\src-tauri\\target\\release\\bundle\\nsis" || true
+  exit 1
+fi
+
+SETUP_SIG="${SETUP_EXE}.sig"
+if [ ! -f "$SETUP_SIG" ]; then
+  echo "==> Signing Windows updater artifact"
+  export TAURI_SIGNING_PRIVATE_KEY
+  TAURI_SIGNING_PRIVATE_KEY="$(cat "$WIN_KEY_FILE")"
+  export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+  npx tauri signer sign "$SETUP_EXE"
+fi
+if [ ! -f "$SETUP_SIG" ]; then
+  echo "error: updater signature missing at $SETUP_SIG" >&2
   exit 1
 fi
 
@@ -102,8 +107,5 @@ with open(os.path.join(win_dir, "latest.json"), "w") as f:
     f.write("\n")
 EOF
 gh release upload "$TAG" .release-win/latest.json --repo "$REPO" --clobber
-
-echo "==> Cleaning signing key off $HOST"
-ssh "$HOST" "del C:\\Users\\cmcel\\_kyber_signing.key"
 
 echo "==> Windows build for $VERSION attached to $TAG."

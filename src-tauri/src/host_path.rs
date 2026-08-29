@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 
 const LEGACY_BUNDLE_ID: &str = "com.kyber.app";
 
@@ -33,7 +33,11 @@ pub fn extra_dirs() -> Vec<String> {
         if let Ok(app_data) = std::env::var("APPDATA") {
             dirs.push(format!(r"{app_data}\npm"));
         }
+        if let Ok(pnpm_home) = std::env::var("PNPM_HOME") {
+            dirs.push(pnpm_home);
+        }
         if let Ok(local) = std::env::var("LOCALAPPDATA") {
+            dirs.push(format!(r"{local}\pnpm"));
             dirs.push(format!(r"{local}\fnm"));
         }
     } else {
@@ -85,6 +89,30 @@ fn find_named(names: &[String], path: &str) -> Option<PathBuf> {
 }
 
 /// Hide the console that Windows allocates for `cmd` / `node` children.
+pub fn kill_tree(child: &mut Child) {
+    let pid = child.id();
+    #[cfg(unix)]
+    {
+        let _ = Command::new("kill")
+            .args(["-TERM", &format!("-{pid}")])
+            .status();
+        let _ = child.wait();
+    }
+    #[cfg(windows)]
+    {
+        let mut kill = Command::new("taskkill");
+        kill.args(["/F", "/T", "/PID", &pid.to_string()]);
+        hide_window(&mut kill);
+        let _ = kill.status();
+        let _ = child.wait();
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+}
+
 pub fn hide_window(#[allow(unused_variables)] command: &mut Command) {
     #[cfg(windows)]
     {
@@ -116,6 +144,11 @@ pub fn node_cli_candidates(shim: &Path) -> Vec<PathBuf> {
         "npx" => vec![
             dir.join("node_modules/npm/bin/npx-cli.js"),
             dir.join("node_modules/npx/bin/npx-cli.js"),
+        ],
+        "pnpm" => vec![
+            dir.join("node_modules/corepack/dist/pnpm.js"),
+            dir.join("pnpm.cjs"),
+            dir.join("node_modules/pnpm/bin/pnpm.cjs"),
         ],
         _ => Vec::new(),
     }
@@ -172,6 +205,15 @@ mod tests {
         let dir = Path::new("/Program Files/nodejs");
         let candidates = node_cli_candidates(&dir.join("npx.cmd"));
         assert!(candidates.iter().any(|path| path.ends_with("node_modules/npm/bin/npx-cli.js")));
+    }
+
+    #[test]
+    fn pnpm_shim_resolves_to_corepack() {
+        let dir = Path::new("/Program Files/nodejs");
+        let candidates = node_cli_candidates(&dir.join("pnpm.cmd"));
+        assert!(candidates
+            .iter()
+            .any(|path| path.ends_with("node_modules/corepack/dist/pnpm.js")));
     }
 
     #[test]

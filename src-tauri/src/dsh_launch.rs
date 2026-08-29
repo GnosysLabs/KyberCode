@@ -5,13 +5,33 @@ use crate::host_path;
 
 const DSH_PACKAGE: &str = "@deepseek-ai/dsh@0.1.1-rc.2";
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Runner {
+    Direct,
+    Npx,
+    PnpmDlx,
+}
+
 pub enum DshLaunch {
     Binary(PathBuf),
     Node {
         node: PathBuf,
         script: PathBuf,
-        via_npx: bool,
+        runner: Runner,
     },
+}
+
+impl DshLaunch {
+    pub fn uses_npm(&self) -> bool {
+        match self {
+            DshLaunch::Node {
+                runner: Runner::Npx,
+                ..
+            } => true,
+            DshLaunch::Binary(binary) => looks_like(binary, "npx"),
+            _ => false,
+        }
+    }
 }
 
 pub fn resolve(path: &str) -> Result<DshLaunch, String> {
@@ -20,33 +40,39 @@ pub fn resolve(path: &str) -> Result<DshLaunch, String> {
         if !binary.is_file() {
             return Err(format!("DSH_BINARY is set but is not a file: {explicit}"));
         }
-        return Ok(unwrap_or_binary(binary, path));
+        return Ok(unwrap_or_binary(binary, path, Runner::Direct));
     }
     if let Some(dsh) = host_path::find("dsh", path) {
-        return Ok(unwrap_or_binary(dsh, path));
+        return Ok(unwrap_or_binary(dsh, path, Runner::Direct));
+    }
+    if let Some(pnpm) = host_path::find("pnpm", path) {
+        if let Some(launch) = unwrap_shim(&pnpm, path, Runner::PnpmDlx) {
+            return Ok(launch);
+        }
+        return Ok(DshLaunch::Binary(pnpm));
     }
     if let Some(npx) = host_path::find("npx", path) {
-        if let Some(launch) = unwrap_shim(&npx, path, true) {
+        if let Some(launch) = unwrap_shim(&npx, path, Runner::Npx) {
             return Ok(launch);
         }
         return Ok(DshLaunch::Binary(npx));
     }
     Err(format!(
-        "dsh is not installed. Install with:\nnpm install -g {DSH_PACKAGE}"
+        "dsh is not installed. Install with:\npnpm add -g {DSH_PACKAGE}"
     ))
 }
 
-fn unwrap_or_binary(shim: PathBuf, path: &str) -> DshLaunch {
-    unwrap_shim(&shim, path, false).unwrap_or(DshLaunch::Binary(shim))
+fn unwrap_or_binary(shim: PathBuf, path: &str, runner: Runner) -> DshLaunch {
+    unwrap_shim(&shim, path, runner).unwrap_or(DshLaunch::Binary(shim))
 }
 
-fn unwrap_shim(shim: &Path, path: &str, via_npx: bool) -> Option<DshLaunch> {
+fn unwrap_shim(shim: &Path, path: &str, runner: Runner) -> Option<DshLaunch> {
     let node = host_path::find_exe("node", path).or_else(|| sibling_node(shim))?;
     let script = host_path::node_cli_for_shim(shim)?;
     Some(DshLaunch::Node {
         node,
         script,
-        via_npx,
+        runner,
     })
 }
 
@@ -60,22 +86,18 @@ pub fn command(launch: &DshLaunch, args: &[&str], dsh_home: &Path, path: &str) -
     let mut command = match launch {
         DshLaunch::Binary(binary) => {
             let mut command = Command::new(binary);
-            if looks_like_npx(binary) {
-                command.args(["--yes", DSH_PACKAGE]);
-            }
+            prefix_package_runner(&mut command, binary_runner(binary));
             command.args(args);
             command
         }
         DshLaunch::Node {
             node,
             script,
-            via_npx,
+            runner,
         } => {
             let mut command = Command::new(node);
             command.arg(script);
-            if *via_npx {
-                command.args(["--yes", DSH_PACKAGE]);
-            }
+            prefix_package_runner(&mut command, *runner);
             command.args(args);
             command
         }
@@ -85,16 +107,39 @@ pub fn command(launch: &DshLaunch, args: &[&str], dsh_home: &Path, path: &str) -
         .env("DSH_HOME", dsh_home)
         .env("PATH", path)
         .env("CI", "1")
+        .env("COREPACK_ENABLE_DOWNLOAD_PROMPT", "0")
         .env("NPM_CONFIG_UPDATE_NOTIFIER", "false")
         .stdin(Stdio::null());
     command
 }
 
-fn looks_like_npx(binary: &Path) -> bool {
+fn prefix_package_runner(command: &mut Command, runner: Runner) {
+    match runner {
+        Runner::Direct => {}
+        Runner::Npx => {
+            command.args(["--yes", DSH_PACKAGE]);
+        }
+        Runner::PnpmDlx => {
+            command.args(["dlx", DSH_PACKAGE]);
+        }
+    }
+}
+
+fn binary_runner(binary: &Path) -> Runner {
+    if looks_like(binary, "npx") {
+        Runner::Npx
+    } else if looks_like(binary, "pnpm") {
+        Runner::PnpmDlx
+    } else {
+        Runner::Direct
+    }
+}
+
+fn looks_like(binary: &Path, name: &str) -> bool {
     binary
         .file_stem()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name.eq_ignore_ascii_case("npx"))
+        .and_then(|stem| stem.to_str())
+        .is_some_and(|stem| stem.eq_ignore_ascii_case(name))
 }
 
 #[cfg(test)]
@@ -104,11 +149,31 @@ mod tests {
     #[test]
     fn npx_shim_fallback_still_passes_the_package() {
         let launch = DshLaunch::Binary(PathBuf::from("npx.cmd"));
-        let command = command(&launch, &["web"], Path::new("/tmp/dsh"), "/bin");
-        let rendered = format!("{command:?}");
+        let rendered = format!(
+            "{:?}",
+            command(&launch, &["web"], Path::new("/tmp/dsh"), "/bin")
+        );
         assert!(rendered.contains("--yes"));
         assert!(rendered.contains(DSH_PACKAGE));
-        assert!(rendered.contains("web"));
+        assert!(launch.uses_npm());
+    }
+
+    #[test]
+    fn pnpm_dlx_does_not_go_through_npm() {
+        let launch = DshLaunch::Node {
+            node: PathBuf::from("node.exe"),
+            script: PathBuf::from("pnpm.js"),
+            runner: Runner::PnpmDlx,
+        };
+        let rendered = format!(
+            "{:?}",
+            command(&launch, &["web"], Path::new("/tmp/dsh"), "/bin")
+        );
+        assert!(rendered.contains("pnpm.js"));
+        assert!(rendered.contains("dlx"));
+        assert!(rendered.contains(DSH_PACKAGE));
+        assert!(!rendered.contains("npx"));
+        assert!(!launch.uses_npm());
     }
 
     #[test]
@@ -116,7 +181,7 @@ mod tests {
         let launch = DshLaunch::Node {
             node: PathBuf::from("node.exe"),
             script: PathBuf::from("npx-cli.js"),
-            via_npx: true,
+            runner: Runner::Npx,
         };
         let rendered = format!(
             "{:?}",
@@ -125,5 +190,6 @@ mod tests {
         assert!(rendered.contains("node.exe"));
         assert!(rendered.contains("npx-cli.js"));
         assert!(!rendered.contains("npx.cmd"));
+        assert!(launch.uses_npm());
     }
 }
