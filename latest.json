@@ -1,14 +1,14 @@
 {
-  "version": "0.1.3",
-  "pub_date": "2026-08-29T16:54:01Z",
+  "version": "0.1.4",
+  "pub_date": "2026-08-29T17:07:05Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaTh2YUx2ZG85YklmaVowd0JXOXJsbWNLN2ZZNTVVZ0hGM1VNNkFmZGhEemNlSkJmZkJLMDVaS20reUtVM1VQeXVjajl1NWpXWDM2cDhoZ0dMWEVRa1EwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDIyNDM5CWZpbGU6S3liZXIuQ29kZS5hcHAudGFyLmd6Ckd1SU5HaUpGQlp0U2VNbHBiNzRBR20vQ2Z6cklVbllxK1JDd0MyblpraVJzRklxejJrUndFeEp4dXJ1MFFyVy9HdkFCTWFSZTJHUlpMYjFNYXZZQUFnPT0K",
-      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.3/Kyber.Code.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaTd5Z1N1OHExKy81citZc1hDQTdkZGxGeGdhL3pqZ2pFZXlZSzNqWFBSL05vZ3k5YkFaZXZPZTJaa0Q4NnJjRE8rOGlwcldhVHo4anA4OFBjS2hEeEFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDIzMjIyCWZpbGU6S3liZXIuQ29kZS5hcHAudGFyLmd6CkRwWDhteDhzNTNCbUNVRDdORGozZUcwRzREeWZrZE5CTnJZUUxWeGdTcmNQazhleWtXdzVGWStZbGJodEdwVWJ6aURieFNSek94MG1McysvcGZOVkNnPT0K",
+      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.4/Kyber.Code.app.tar.gz"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaTltM1h3WUEzaC9pVjhXWjA1alVvM2hBR2t2QmZhemQrSFZMTDdoVWwzbm5Gc0FOMXBWMzVXYjlkNGxtNlpPT3NvNDNaM3JvWnl3eXQxR2Q0T3dJMHdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDIyNjc4CWZpbGU6S3liZXIuQ29kZV8wLjEuM194NjQtc2V0dXAuZXhlCnFMdkFOUlVmZHJlenhYRVNlSHBIM29VbDYyS1RDc0lING90aDFRMm5hVkQraXR1ZnZmRVhneVdqSk94MGhRVVVGZ1BOdlhJcFpLNmNrWkk4NlI1QUJBPT0K",
-      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.3/Kyber.Code_0.1.3_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaTZ3ZERSWnliSzl0UEY0NzdxUU83TXhKcmZDM2dxd0F6dFBMTHJVSWh4TkQzdVZFTGk1WkVkQksxMDd2Ui93L2xwcnJZM2FyYi91S0VtakhpbUxRd3drPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDIzMzYwCWZpbGU6S3liZXIuQ29kZV8wLjEuNF94NjQtc2V0dXAuZXhlCmRyL3cvUm5XVTl2TUxWT0o3VVNGUlYxVjh6RkZDZWJrK0hGRHlNVE1OVEFxRVdBSVp0MU5VMFRWUnFxa212Wks4NVZ5QXR6dUtuRHhnUEt2R0ZkcUJ3PT0K",
+      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.4/Kyber.Code_0.1.4_x64-setup.exe"
     }
   }
 }
