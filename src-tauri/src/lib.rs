@@ -7,12 +7,23 @@ use std::time::{Duration, Instant};
 
 use base64::Engine;
 use tauri::webview::PageLoadEvent;
-use tauri::{AppHandle, Manager, RunEvent, WebviewWindow};
+use tauri_plugin_updater::UpdaterExt;
+use tauri::{
+    AppHandle, LogicalPosition, Manager, RunEvent, TitleBarStyle, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder,
+};
 use url::Url;
 
 const DSH_INSTALL: &str = "npm install -g @deepseek-ai/dsh@0.1.1-rc.2";
 const READY_TIMEOUT: Duration = Duration::from_secs(90);
 const LOGO_PNG: &[u8] = include_bytes!("../../src/assets/kyber-logo.png");
+const CRYSTAL_PNG: &[u8] = include_bytes!("../../src/assets/kyber-crystal.png");
+const SKIN_CSS: &str = concat!(
+    include_str!("../../src/skin/tokens.css"),
+    "\n",
+    include_str!("../../src/skin/surfaces.css"),
+);
+const SKIN_JS: &str = include_str!("../../src/skin/skin.js");
 
 struct DshChild {
     child: Mutex<Option<Child>>,
@@ -175,85 +186,20 @@ fn eval_error(window: &WebviewWindow, text: &str) {
     );
 }
 
-fn logo_data_uri() -> String {
+fn png_data_uri(bytes: &[u8]) -> String {
     format!(
         "data:image/png;base64,{}",
-        base64::engine::general_purpose::STANDARD.encode(LOGO_PNG)
+        base64::engine::general_purpose::STANDARD.encode(bytes)
     )
 }
 
 fn skin_script() -> String {
-    let logo = logo_data_uri();
     format!(
-        r##"(function () {{
-  try {{
-    if (location.hostname !== '127.0.0.1' || window.__KYBER_SKIN__) return;
-    window.__KYBER_SKIN__ = true;
-    var LOGO = {logo};
-    var style = document.createElement('style');
-    style.id = 'kyber-skin';
-    style.textContent = [
-      'html, body {{ background: #07070b !important; color-scheme: dark !important; }}',
-      'html {{ color-scheme: dark !important; }}',
-      'body {{ padding-top: 52px !important; }}',
-      'html, body, body[data-ds-dark-theme] {{',
-      '  --dsw-alias-bg-base: #07070b;',
-      '  --dsw-alias-bg-layer-1: #0c0c12;',
-      '  --dsw-alias-bg-layer-2: #12121a;',
-      '  --dsw-alias-bg-layer-3: #181822;',
-      '  --dsw-alias-bg-module-platform: #0c0c12;',
-      '  --dsw-alias-bg-overlay: #1a1a24;',
-      '  --dsw-specific-sidebar-fill: #07070b;',
-      '  --dsw-specific-sidebar-nav-item-active: #16161f;',
-      '  --dsw-specific-sidebar-nav-item-hover: #101018;',
-      '  --dsw-specific-bubble: #12121a;',
-      '  --dsw-specific-bubble-highlight: #1a1428;',
-      '  --dsw-specific-input-major: #12121a;',
-      '  --dsw-specific-selector: #12121a;',
-      '  --dsw-specific-menu: #12121a;',
-      '  --dsw-alias-button-info-fill: #7b61ff;',
-      '  --dsw-alias-button-info-hover: #ff4dff;',
-      '  --dsw-alias-state-business-primary: #7b61ff;',
-      '  --dsw-alias-state-business-tertiary: #1a1428;',
-      '  --dsw-static-deepseek-400: #9a6bff;',
-      '  --dsw-static-deepseek-450: #7b61ff;',
-      '  --dsw-static-deepseek-500: #7b61ff;',
-      '  --dsw-alias-brand-primary-new-colorprimary-new-color: #7b61ff;',
-      '}}',
-      '#kyber-chrome {{',
-      '  position: fixed; top: 0; left: 0; right: 0; height: 52px;',
-      '  z-index: 2147483647; display: flex; align-items: center;',
-      '  padding: 0 16px 0 86px; background: #07070b;',
-      '  box-shadow: inset 0 -1px 0 rgba(123, 97, 255, 0.16);',
-      '  pointer-events: none;',
-      '}}',
-      '#kyber-chrome [data-tauri-drag-region] {{',
-      '  position: absolute; inset: 0 0 0 86px; pointer-events: auto;',
-      '}}',
-      '#kyber-chrome img {{',
-      '  position: relative; z-index: 1; height: 22px; width: auto;',
-      '  pointer-events: none; user-select: none;',
-      '}}'
-    ].join('\\n');
-    (document.head || document.documentElement).appendChild(style);
-    function mountChrome() {{
-      if (document.getElementById('kyber-chrome') || !document.body) return;
-      var bar = document.createElement('div');
-      bar.id = 'kyber-chrome';
-      var drag = document.createElement('div');
-      drag.setAttribute('data-tauri-drag-region', '');
-      var img = document.createElement('img');
-      img.src = LOGO;
-      img.alt = 'Kyber';
-      bar.appendChild(drag);
-      bar.appendChild(img);
-      document.body.appendChild(bar);
-    }}
-    mountChrome();
-    document.addEventListener('DOMContentLoaded', mountChrome);
-  }} catch (e) {{}}
-}})();"##,
-        logo = js_string(&logo)
+        "(function(){{\nconst KYBER_CSS={css};\nconst KYBER_LOGO={logo};\nconst KYBER_CRYSTAL={crystal};\n{js}\n}})();",
+        css = js_string(SKIN_CSS),
+        logo = js_string(&png_data_uri(LOGO_PNG)),
+        crystal = js_string(&png_data_uri(CRYSTAL_PNG)),
+        js = SKIN_JS
     )
 }
 
@@ -297,7 +243,7 @@ fn boot_dsh(app: &AppHandle, window: &WebviewWindow, dsh: &DshChild) -> Result<(
     std::fs::create_dir_all(&dsh_home)
         .map_err(|error| format!("could not create DSH_HOME {}: {error}", dsh_home.display()))?;
 
-    eval_status(window, "Starting DeepSeek Harness…");
+    eval_status(window, "");
 
     let launch = resolve_dsh(&path)?;
     let mut child = spawn_dsh(&dsh_home, &path, &launch).map_err(|error| {
@@ -359,22 +305,71 @@ fn start_harness(app: AppHandle, window: WebviewWindow, dsh: Arc<DshChild>) {
         .expect("failed to start the dsh supervisor thread");
 }
 
+fn start_updater(app: AppHandle) {
+    thread::Builder::new()
+        .name("kyber-updater".into())
+        .spawn(move || {
+            // Give the boot sequence a quiet window before touching the network.
+            thread::sleep(Duration::from_secs(10));
+            let result = match app.updater() {
+                Ok(updater) => tauri::async_runtime::block_on(async move {
+                    updater.check().await.map(|update| (update, updater))
+                }),
+                Err(error) => Err(error),
+            };
+            match result {
+                Ok((Some(update), _updater)) => {
+                    println!("kyber-updater: downloading {}", update.version);
+                    let installed = tauri::async_runtime::block_on(
+                        update.download_and_install(|chunk, total| {
+                            if let Some(total) = total {
+                                println!(
+                                    "kyber-updater: {chunk}/{total} bytes"
+                                );
+                            }
+                        }, || {}),
+                    );
+                    match installed {
+                        Ok(()) => {
+                            println!("kyber-updater: installed, restarting");
+                            app.restart();
+                        }
+                        Err(error) => eprintln!("kyber-updater: install failed: {error}"),
+                    }
+                }
+                Ok((None, _)) => println!("kyber-updater: already up to date"),
+                Err(error) => eprintln!("kyber-updater: check failed: {error}"),
+            }
+        })
+        .expect("failed to start the updater thread");
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let dsh = Arc::new(DshChild::new());
     let dsh_on_exit = Arc::clone(&dsh);
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(move |app| {
-            let window = app
-                .get_webview_window("main")
-                .ok_or("missing main window")?;
+            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                .title("Kyber")
+                .inner_size(1280.0, 800.0)
+                .hidden_title(true)
+                .title_bar_style(TitleBarStyle::Overlay)
+                .traffic_light_position(LogicalPosition::new(18.0, 18.0))
+                .initialization_script(&skin_script())
+                .build()?;
             start_harness(app.handle().clone(), window, Arc::clone(&dsh));
+            start_updater(app.handle().clone());
             Ok(())
         })
         .on_page_load(|webview, payload| {
-            if payload.event() == PageLoadEvent::Finished
-                && payload.url().host_str() == Some("127.0.0.1")
+            if payload.url().host_str() == Some("127.0.0.1")
+                && matches!(
+                    payload.event(),
+                    PageLoadEvent::Started | PageLoadEvent::Finished
+                )
             {
                 let _ = webview.eval(&skin_script());
             }
@@ -386,4 +381,39 @@ pub fn run() {
                 dsh_on_exit.kill();
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_ready_url_reads_tokenized_loopback() {
+        let url = extract_ready_url("dsh web: http://127.0.0.1:4123/?token=abc ready").unwrap();
+        assert_eq!(url.host_str(), Some("127.0.0.1"));
+        assert_eq!(url.port(), Some(4123));
+        assert_eq!(url.query(), Some("token=abc"));
+    }
+
+    #[test]
+    fn extract_ready_url_rejects_non_loopback() {
+        assert!(extract_ready_url("dsh web: http://example.com/?token=abc").is_none());
+        assert!(extract_ready_url("listening on http://127.0.0.1:9/").is_none());
+    }
+
+    #[test]
+    fn skin_script_reskins_in_place_instead_of_bolting_a_logo_bar() {
+        let script = skin_script();
+        assert!(script.contains("--dsw-alias-bg-base"));
+        assert!(script.contains("!important"));
+        assert!(script.contains("kyber-hero-mark"));
+        assert!(script.contains("KYBER_CRYSTAL"));
+        assert!(script.contains("data:image/png;base64,"));
+        assert!(script.contains("plugin:window|start_dragging"));
+        assert!(script.contains("themeCube"));
+        assert!(script.contains("kyber-boot"));
+        assert!(script.contains("kyber-throb"));
+        assert!(!script.contains("padding-top: 52px"));
+        assert!(!script.contains("kyber-chrome"));
+    }
 }

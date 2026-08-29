@@ -2,10 +2,7 @@
   color-scheme: dark;
   --void: #07070b;
   --violet: #7b61ff;
-  --magenta: #ff4dff;
-  --coral: #ff8a50;
   --ink: #f2f0ff;
-  --muted: rgba(242, 240, 255, 0.62);
   background: var(--void);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -35,81 +32,53 @@ body {
 .app-frame {
   position: relative;
   display: grid;
-  grid-template-rows: 52px minmax(0, 1fr);
-  background:
-    radial-gradient(ellipse 46% 38% at 36% 48%, rgba(123, 97, 255, 0.16), transparent 70%),
-    radial-gradient(ellipse 36% 32% at 56% 52%, rgba(255, 77, 255, 0.1), transparent 68%),
-    radial-gradient(ellipse 30% 26% at 74% 58%, rgba(255, 138, 80, 0.08), transparent 66%),
-    radial-gradient(ellipse 90% 80% at 50% 50%, #0c0c12, var(--void));
-  box-shadow:
-    inset 0 0 0 1px rgba(123, 97, 255, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045);
-}
-
-.chrome {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  padding: 0 18px 0 86px;
-  border-bottom: 1px solid rgba(123, 97, 255, 0.16);
+  place-items: center;
+  background: var(--void);
 }
 
 .window-drag-region {
-  position: absolute;
-  z-index: 1;
+  position: fixed;
+  z-index: 2;
   top: 0;
   right: 0;
+  bottom: 0;
   left: 86px;
-  height: 50px;
-}
-
-.chrome-mark {
-  position: relative;
-  z-index: 2;
-  display: block;
-  width: 108px;
-  height: auto;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.stage {
-  position: relative;
-  min-height: 0;
-  display: grid;
-  place-items: center;
-  padding: 32px;
 }
 
 .brand-lockup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  transform: translateY(-10px);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .kyber-mark {
   display: block;
-  width: min(256px, 42vw);
+  width: min(96px, 22vw);
   height: auto;
   pointer-events: none;
-  filter: drop-shadow(0 0 28px rgba(123, 97, 255, 0.18));
+  animation: kyber-throb 1.7s ease-in-out infinite;
 }
 
-.status {
-  margin: 0;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: var(--muted);
+@keyframes kyber-throb {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.62;
+    filter: drop-shadow(0 0 12px rgba(123, 97, 255, 0.18));
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 28px rgba(123, 97, 255, 0.4));
+  }
 }
 
 .error {
+  position: relative;
+  z-index: 1;
   max-width: 42rem;
   margin: 0;
   padding: 18px 20px;
@@ -120,7 +89,12 @@ body {
   background: rgba(7, 7, 11, 0.72);
   border: 1px solid rgba(123, 97, 255, 0.28);
   border-radius: 12px;
-  box-shadow:
-    0 0 0 1px rgba(255, 77, 255, 0.08),
-    0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kyber-mark {
+    animation: none;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 16px rgba(123, 97, 255, 0.22));
+  }
 }

@@ -1,0 +1,403 @@
+/* One room: mesh + stars live in the main canvas, never the sidebar.
+   Use z-index stacking, not isolation — isolate breaks -webkit-app-region drag. */
+#root {
+  position: relative;
+  z-index: 0;
+}
+
+#root > * {
+  position: relative;
+  z-index: 1;
+}
+
+[class*="centerCol"] {
+  position: relative;
+}
+
+[class*="wSkVaW_root"] {
+  background: transparent !important;
+}
+
+.kyber-stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+[class*="centerCol"] > *:not(.kyber-stars) {
+  position: relative;
+  z-index: 1;
+}
+
+.kyber-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #f2f0ff;
+  box-shadow: 0 0 6px rgba(242, 240, 255, 0.5);
+  animation: kyber-twinkle ease-in-out infinite;
+}
+
+.kyber-star-cool {
+  background: #c4b4ff;
+  box-shadow: 0 0 8px rgba(123, 97, 255, 0.55);
+}
+
+.kyber-star-warm {
+  background: #ffc4a0;
+  box-shadow: 0 0 8px rgba(255, 138, 80, 0.4);
+}
+
+@keyframes kyber-twinkle {
+  0%,
+  100% {
+    opacity: 0.16;
+  }
+  45% {
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.32;
+  }
+}
+
+#kyber-window-drag {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  right: 0;
+  left: 86px;
+  height: 52px;
+}
+
+.kyber-drag-pad {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-width: 36px;
+  min-height: 100%;
+}
+
+[class*="logoRow"] .kyber-drag-pad {
+  display: none !important;
+}
+
+[class*="sidebarCol"] {
+  position: relative;
+  background: #07070b !important;
+  border-right-color: transparent !important;
+}
+
+[class*="sidebarCol"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 28px,
+    rgba(123, 97, 255, 0.14) 72px
+  );
+}
+
+[class*="logoRow"] {
+  position: relative;
+  display: flex !important;
+  height: 52px !important;
+  margin-bottom: 10px !important;
+  padding: 0 36px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+[class*="logoRow"] > button:first-of-type {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  justify-content: center !important;
+}
+
+[class*="brandIdentity"],
+[class*="brandMark"] {
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+[class*="logoRow"] [class*="toggle"] {
+  position: absolute !important;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+}
+
+/* React keeps the pill open after the toggle moves out from under the cursor. */
+[class*="logoRow"] > [class*="toggle"]:not(:hover):not(:focus-visible) ~ [role="tooltip"] {
+  display: none !important;
+}
+
+[class*="collapsed"] [class*="logoRow"] {
+  height: auto !important;
+  min-height: 36px !important;
+  margin: 36px 0 12px !important;
+  padding: 0 !important;
+  justify-content: center !important;
+}
+
+[class*="collapsed"] [class*="logoRow"] [class*="toggle"] {
+  position: static;
+}
+
+[class*="brandName"],
+[class*="buildRevision"],
+[class*="brandMark"] svg,
+[class*="railMark"] svg,
+[class*="fishHitbox"],
+[class*="headlineText"],
+[class*="previewBadge"],
+[class*="menuStatus"] {
+  display: none !important;
+}
+
+.kyber-mark {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 0 14px rgba(123, 97, 255, 0.36));
+}
+
+[class*="collapsed"] [class*="logoRow"] .kyber-drag-pad {
+  display: none !important;
+}
+
+[class*="collapsed"] [class*="toggle"] {
+  width: 36px !important;
+  height: 36px !important;
+  pointer-events: auto !important;
+}
+
+[class*="collapsed"] [class*="railMark"],
+[class*="collapsed"] [class*="toggle"]:hover [class*="railMark"] {
+  display: inline-flex !important;
+}
+
+[class*="collapsed"] [class*="toggle"] [class*="panelIcon"],
+[class*="collapsed"] [class*="toggle"]:hover [class*="panelIcon"] {
+  display: none !important;
+}
+
+[class*="railMark"] .kyber-mark {
+  width: 30px;
+  height: 30px;
+}
+
+[class*="headline"]:not([class*="headlineText"]) {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px !important;
+}
+
+.kyber-hero-mark {
+  display: block;
+  width: min(128px, 28vw);
+  height: auto;
+  filter: drop-shadow(0 0 32px rgba(123, 97, 255, 0.32));
+}
+
+[class*="heroGlow"] ellipse[fill="#6187D8"] {
+  fill: #7b61ff;
+  fill-opacity: 0.16;
+}
+
+[class*="newSession"] {
+  border-radius: 999px !important;
+  border-color: rgba(123, 97, 255, 0.22) !important;
+  background: rgba(18, 18, 26, 0.86) !important;
+}
+
+[class*="uV2eYG_card"] {
+  border-radius: 28px !important;
+  border-color: rgba(123, 97, 255, 0.22) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
+    #12121a !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 48px rgba(0, 0, 0, 0.28) !important;
+}
+
+[class*="uV2eYG_cardWorkspaceTrigger"] {
+  border-color: transparent !important;
+}
+
+[class*="uV2eYG_cardWorkspaceTrigger"]::after {
+  display: none !important;
+}
+
+.kyber-card-dash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.kyber-card-dash rect {
+  fill: none;
+  stroke: rgba(123, 97, 255, 0.42);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+}
+
+[class*="uV2eYG_cardWorkspaceTrigger"]:hover .kyber-card-dash rect {
+  stroke: rgba(123, 97, 255, 0.72);
+}
+
+[class*="uV2eYG_card"]:focus-within {
+  border-color: rgba(255, 138, 80, 0.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 138, 80, 0.22),
+    0 22px 56px rgba(123, 97, 255, 0.14) !important;
+}
+
+[class*="overlay"] > [class*="mask"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(7, 7, 11, 0.78) !important;
+}
+
+[class*="dialog"]:has([class*="GL8Viq_description"]) {
+  visibility: hidden;
+}
+
+[data-kyber-unadded-deepseek] {
+  display: none !important;
+}
+
+/* Hide only the theme row, not the whole General section: the renderer wraps
+   every row in one [data-slot="settings.general.item"] outlet, so matching the
+   outlet itself blanks the entire section. */
+[data-slot="settings.general.item"] > *:has([class*="themeCube"]) {
+  display: none !important;
+}
+
+[class*="uV2eYG_card"],
+[class*="uV2eYG_row"],
+[class*="_7KE1Ra_root"] {
+  overflow: visible !important;
+}
+
+[class*="_7KE1Ra_menu"] {
+  z-index: 80 !important;
+}
+
+[data-kyber-hush-model] > [class*="_7KE1Ra_trigger"] [class*="_7KE1Ra_triggerLabel"] {
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+[data-kyber-hush-model] > [class*="_7KE1Ra_trigger"] [class*="_7KE1Ra_triggerLabel"]::after {
+  content: "Select model";
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+[data-kyber-hush-model] > [class*="_7KE1Ra_trigger"] [class*="_7KE1Ra_triggerEffort"] {
+  display: none !important;
+}
+
+[data-kyber-unadded-group] {
+  display: none !important;
+}
+
+[data-kyber-hush-effort] {
+  display: none !important;
+}
+
+[data-kyber-hush-value] {
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+[data-kyber-hush-value]::after {
+  content: "Select model";
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.kyber-model-empty {
+  color: var(--dsw-alias-label-tertiary, #9a96a8);
+  padding: 10px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+[class*="_dialog_"] {
+  background: #12121a !important;
+  border-color: rgba(123, 97, 255, 0.22) !important;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(123, 97, 255, 0.12) !important;
+}
+
+[class*="wordmark"] {
+  letter-spacing: 0.14em !important;
+}
+
+#kyber-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: #07070b;
+  pointer-events: none;
+}
+
+.kyber-boot-mark {
+  display: block;
+  width: min(96px, 22vw);
+  height: auto;
+  animation: kyber-throb 1.7s ease-in-out infinite;
+}
+
+@keyframes kyber-throb {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.62;
+    filter: drop-shadow(0 0 12px rgba(123, 97, 255, 0.18));
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 28px rgba(123, 97, 255, 0.4));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kyber-star {
+    animation: none;
+    opacity: 0.45;
+  }
+
+  .kyber-mark,
+  .kyber-hero-mark,
+  .kyber-boot-mark {
+    animation: none;
+    filter: none;
+    opacity: 0.9;
+  }
+}

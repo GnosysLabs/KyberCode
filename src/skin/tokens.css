@@ -1,0 +1,106 @@
+/* Kyber palette wins over dsh theme sheets (those load later, without !important). */
+html,
+body,
+#root,
+body[data-ds-dark-theme] {
+  color-scheme: dark !important;
+  --void: #07070b;
+  --violet: #7b61ff;
+  --magenta: #ff4dff;
+  --coral: #ff8a50;
+  --ink: #f2f0ff;
+  --dsw-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    sans-serif !important;
+  --ds-ease-in-out: cubic-bezier(0.32, 0.72, 0, 1) !important;
+
+  --dsw-static-deepseek-50: #1a1428 !important;
+  --dsw-static-deepseek-100: #241838 !important;
+  --dsw-static-deepseek-200: #2e1c48 !important;
+  --dsw-static-deepseek-300: #5b46c8 !important;
+  --dsw-static-deepseek-400: #9a6bff !important;
+  --dsw-static-deepseek-450: #7b61ff !important;
+  --dsw-static-deepseek-500: #7b61ff !important;
+  --dsw-static-deepseek-600: #5b46c8 !important;
+  --dsw-static-deepseek-700-delete: #3d2f88 !important;
+  --dsw-static-deepseek-800: #241838 !important;
+  --dsw-static-deepseek-900: #16101f !important;
+
+  --dsw-static-neutral-bluish-950: #07070b !important;
+  --dsw-static-neutral-bluish-900: #0c0c12 !important;
+  --dsw-static-neutral-bluish-875: #101018 !important;
+  --dsw-static-neutral-bluish-850: #14141c !important;
+  --dsw-static-neutral-bluish-800: #1a1a24 !important;
+  --dsw-static-neutral-bluish-750: #22222e !important;
+  --dsw-static-neutral-bluish-700: #2c2c3a !important;
+  --dsw-static-neutral-bluish-50: #f2f0ff !important;
+  --dsw-static-neutral-bluish-60: #12121a !important;
+  --dsw-static-neutral-bluish-75: #16161f !important;
+  --dsw-static-neutral-bluish-100: #1c1c28 !important;
+
+  --dsw-alias-bg-base: #07070b !important;
+  --dsw-alias-bg-layer-1: #0c0c12 !important;
+  --dsw-alias-bg-layer-2: #12121a !important;
+  --dsw-alias-bg-layer-3: #181822 !important;
+  --dsw-alias-bg-module-platform: #12121a !important;
+  --dsw-alias-bg-overlay: #1a1a24 !important;
+  --dsw-alias-bg-multi-select: #16161f !important;
+  --dsw-alias-border-l1: rgba(123, 97, 255, 0.12) !important;
+  --dsw-alias-border-l2: rgba(123, 97, 255, 0.2) !important;
+  --dsw-alias-border-l2-darkmode-thin: rgba(123, 97, 255, 0.16) !important;
+  --dsw-alias-border-l3: rgba(242, 240, 255, 0.12) !important;
+  --dsw-alias-border-l4: rgba(242, 240, 255, 0.2) !important;
+  --dsw-alias-brand-primary: #f2f0ff !important;
+  --dsw-alias-brand-text: #f2f0ff !important;
+  --dsw-alias-brand-primary-invert: #07070b !important;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #7b61ff !important;
+  --dsw-alias-button-info-fill: #7b61ff !important;
+  --dsw-alias-button-info-hover: #9a6bff !important;
+  --dsw-alias-button-primary-fill: #f2f0ff !important;
+  --dsw-alias-button-primary-hover: #ffffff !important;
+  --dsw-alias-button-elevated-fill: #12121a !important;
+  --dsw-alias-button-floating-fill: #14141c !important;
+  --dsw-alias-button-floating-hover: #1a1a24 !important;
+  --dsw-alias-interactive-bg-hover: rgba(123, 97, 255, 0.1) !important;
+  --dsw-alias-interactive-bg-hover-accent: rgba(123, 97, 255, 0.18) !important;
+  --dsw-alias-interactive-bg-active: rgba(123, 97, 255, 0.22) !important;
+  --dsw-alias-label-primary: #f2f0ff !important;
+  --dsw-alias-label-primary-bluish: #f2f0ff !important;
+  --dsw-alias-label-primary-dimmed: rgba(242, 240, 255, 0.82) !important;
+  --dsw-alias-label-secondary: rgba(242, 240, 255, 0.7) !important;
+  --dsw-alias-label-tertiary: rgba(242, 240, 255, 0.5) !important;
+  --dsw-alias-label-caption: rgba(242, 240, 255, 0.4) !important;
+  --dsw-alias-state-business-primary: #7b61ff !important;
+  --dsw-alias-state-business-tertiary: #1a1428 !important;
+  --dsw-alias-markdown-code-block: #0c0c12 !important;
+  --dsw-alias-markdown-code-block-banner: #101018 !important;
+  --dsw-alias-markdown-inline-code: #1a1428 !important;
+  --dsw-alias-scrollbar-bg-l1: #2c2c3a !important;
+  --dsw-alias-scrollbar-bg-l2: #3a3a4c !important;
+  --dsw-alias-tooltip-bg: #1a1a24 !important;
+  --dsw-alias-toast-bg: #1a1a24 !important;
+  --dsw-specific-sidebar-fill: #07070b !important;
+  --dsw-specific-sidebar-nav-item-active: #1a1428 !important;
+  --dsw-specific-sidebar-nav-item-active-accent: #241838 !important;
+  --dsw-specific-sidebar-nav-item-hover: #12121a !important;
+  --dsw-specific-bubble: #14141c !important;
+  --dsw-specific-bubble-highlight: #1a1428 !important;
+  --dsw-specific-input-major: #12121a !important;
+  --dsw-specific-selector: #12121a !important;
+  --dsw-specific-menu: #12121a !important;
+  --dsw-specific-tip: #12121a !important;
+  --dsw-shadow-lv2: 0 8px 28px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(123, 97, 255, 0.08) !important;
+  --dsw-shadow-lv3: 0 18px 48px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(123, 97, 255, 0.14) !important;
+  --dsw-alias-bg-mask-1: rgba(7, 7, 11, 0.78) !important;
+  --dsw-mask-blur: none !important;
+  --shiki-token-function: #c4b5ff !important;
+  --shiki-token-keyword: #ffa3e0 !important;
+}
+
+html,
+body,
+#root {
+  background: #07070b !important;
+  color: #f2f0ff !important;
+}
