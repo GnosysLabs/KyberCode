@@ -43,14 +43,22 @@ scp -q "$WIN_KEY_FILE" "$HOST:C:/Users/cmcel/_kyber_signing.key"
 # The build runs under PowerShell because the multiline signing key cannot be
 # passed through cmd.exe environment variables.
 scp -q Scripts/build-windows.ps1 "$HOST:C:/Users/cmcel/src/KyberCode/build-windows.ps1"
-ssh "$HOST" "powershell -ExecutionPolicy Bypass -File C:\\Users\\cmcel\\src\\KyberCode\\build-windows.ps1" 2>&1 | tail -25
+# Do not pipe the SSH session through tail/head — a full pipe buffer
+# deadlocks npx tauri build and leaves the installer unsigned.
+ssh "$HOST" "powershell -ExecutionPolicy Bypass -File C:\\Users\\cmcel\\src\\KyberCode\\build-windows.ps1"
 ssh "$HOST" "del C:\\Users\\cmcel\\_kyber_signing.key"
 
 echo "==> Fetching Windows artifacts"
 rm -rf .release-win && mkdir -p .release-win
-scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/nsis/*-setup.exe" .release-win/ || true
-scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/nsis/*-setup.exe.sig" .release-win/ || true
-scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/msi/*.msi" .release-win/ || true
+ssh "$HOST" "powershell -NoProfile -Command \"
+  Copy-Item -LiteralPath (Get-ChildItem 'C:\\Users\\cmcel\\src\\KyberCode\\src-tauri\\target\\release\\bundle\\nsis\\*$VERSION*-setup.exe' | Select-Object -First 1).FullName -Destination 'C:\\Users\\cmcel\\Kyber.Code_${VERSION}_x64-setup.exe' -Force
+  \$sig = Get-ChildItem 'C:\\Users\\cmcel\\src\\KyberCode\\src-tauri\\target\\release\\bundle\\nsis\\*$VERSION*-setup.exe.sig' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (\$sig) { Copy-Item -LiteralPath \$sig.FullName -Destination 'C:\\Users\\cmcel\\Kyber.Code_${VERSION}_x64-setup.exe.sig' -Force }
+  Copy-Item -LiteralPath (Get-ChildItem 'C:\\Users\\cmcel\\src\\KyberCode\\src-tauri\\target\\release\\bundle\\msi\\*$VERSION*.msi' | Select-Object -First 1).FullName -Destination 'C:\\Users\\cmcel\\Kyber.Code_${VERSION}_x64_en-US.msi' -Force
+\""
+scp -q "$HOST:C:/Users/cmcel/Kyber.Code_${VERSION}_x64-setup.exe" .release-win/
+scp -q "$HOST:C:/Users/cmcel/Kyber.Code_${VERSION}_x64-setup.exe.sig" .release-win/ || true
+scp -q "$HOST:C:/Users/cmcel/Kyber.Code_${VERSION}_x64_en-US.msi" .release-win/ || true
 ls .release-win/
 
 SETUP_EXE=$(find .release-win -name "*-setup.exe" | head -1)

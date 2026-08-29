@@ -1,10 +1,14 @@
 {
-  "version": "0.1.1",
-  "pub_date": "2026-08-29T10:29:09Z",
+  "version": "0.1.2",
+  "pub_date": "2026-08-29T14:37:49Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaStLS1ZJTWo2OVgxZ21tYTdzRFhkTDl5Q2hTK25yaXY1NmNBbEQxQ1JDaXRPU2t1M0c3OWRLQjhZSHJ6dUdOcE9tdVdqRUwrZkc3TzNsMEpTeTNBVXc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3OTk5MzQ2CWZpbGU6S3liZXIuYXBwLnRhci5negpIa2tlM3p3TFNybUt2R255Smd2SnIya0ZCa05wVEpRVGZqYjJXKy9oZUlwdUZBdFNoWCtTRnVUTVNTTzk2WjJMV1U3OGFCc1lOYUVjWWlGcVErTWNCQT09Cg==",
-      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.1/Kyber.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaXp5RkMvUWRvSHd0eVR5cTFnS1kwcGJncUFWWUVSblg2UkdxU0FodGJvYmlFTVFkbXdYL2NlS2hpWVNrbDZvbU1Cc2poL1hmOEhmT0syczE2M0RGeVFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDE0MjY1CWZpbGU6S3liZXIgQ29kZS5hcHAudGFyLmd6CnZCMjNQSG02NWg0OERtVFNCQXJ0K285WTJIOFJFK0pTMEtnZE5ZR3lJMndnbkdVZ3RvcG1mdGI3S1NvQS9oTlI5dStZSXR0UFhGL3FDSFFKT1FEYkJBPT0K",
+      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.2/Kyber.Code.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaXdRSzE3MURDUmxTS2JqVTlQd3d0aE14N0FCcXVLNnMvR1FyY0o2S3haOFRZQ1RCK1AyRzFXSDBTUnpvUUo5cVRkZlhYWG5zMGpGT1MreTNYNlNYK1FnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MDE1MzcyCWZpbGU6S3liZXIuQ29kZV8wLjEuMl94NjQtc2V0dXAuZXhlCm01SjNFMnl2Ym9QdkM3QlQzYU5neUtPQkpDaUU5emNDc2lYTjlENktzK1NvN0dCM0dqam5LaDFueXdKWG9OcjFvbFgzUFhvVllqRklkelhNcmUxakFnPT0K",
+      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.2/Kyber.Code_0.1.2_x64-setup.exe"
     }
   }
 }

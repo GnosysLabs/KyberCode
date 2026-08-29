@@ -14,6 +14,7 @@ use tauri::{
 use url::Url;
 
 mod codex_connect;
+mod dsh_launch;
 mod host_path;
 
 #[cfg(target_os = "macos")]
@@ -67,7 +68,15 @@ fn kill_tree(child: &mut Child) {
             .status();
         let _ = child.wait();
     }
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    {
+        let mut kill = Command::new("taskkill");
+        kill.args(["/F", "/T", "/PID", &pid.to_string()]);
+        host_path::hide_window(&mut kill);
+        let _ = kill.status();
+        let _ = child.wait();
+    }
+    #[cfg(not(any(unix, windows)))]
     {
         let _ = child.kill();
         let _ = child.wait();
@@ -94,51 +103,18 @@ fn resolve_dsh_home(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(current)
 }
 
-enum DshLaunch {
-    Direct(PathBuf),
-    Npx(PathBuf),
-}
-
-fn resolve_dsh(path: &str) -> Result<DshLaunch, String> {
-    if let Ok(explicit) = std::env::var("DSH_BINARY") {
-        let binary = PathBuf::from(&explicit);
-        if binary.is_file() {
-            return Ok(DshLaunch::Direct(binary));
-        }
-        return Err(format!(
-            "DSH_BINARY is set but is not a file: {explicit}"
-        ));
-    }
-    if let Some(dsh) = host_path::find("dsh", path) {
-        return Ok(DshLaunch::Direct(dsh));
-    }
-    if let Some(npx) = host_path::find("npx", path) {
-        return Ok(DshLaunch::Npx(npx));
-    }
-    Err(format!(
-        "dsh is not installed. Install with:\n{DSH_INSTALL}"
-    ))
-}
-
-fn spawn_dsh(dsh_home: &Path, path: &str, launch: &DshLaunch) -> std::io::Result<Child> {
-    let mut command = match launch {
-        DshLaunch::Direct(binary) => {
-            let mut command = Command::new(binary);
-            command.args(["web", "--no-open", "--port", "0"]);
-            command
-        }
-        DshLaunch::Npx(npx) => {
-            let mut command = Command::new(npx);
-            command.args(["--yes", "@deepseek-ai/dsh", "web", "--no-open", "--port", "0"]);
-            command
-        }
-    };
-    command
-        .env("DSH_HOME", dsh_home)
-        .env("PATH", path)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+fn spawn_dsh(
+    dsh_home: &Path,
+    path: &str,
+    launch: &dsh_launch::DshLaunch,
+) -> std::io::Result<Child> {
+    let mut command = dsh_launch::command(
+        launch,
+        &["web", "--no-open", "--port", "0"],
+        dsh_home,
+        path,
+    );
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -164,6 +140,7 @@ fn open_in_browser(url: &str) {
     let mut command = {
         let mut command = Command::new("cmd");
         command.args(["/C", "start", ""]);
+        host_path::hide_window(&mut command);
         command
     };
     let _ = command.arg(url).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn();
@@ -179,8 +156,27 @@ fn keep_or_handoff(url: &Url) -> bool {
     false
 }
 
+fn strip_ansi(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\u{1b}' && chars.peek() == Some(&'[') {
+            chars.next();
+            for next in chars.by_ref() {
+                if next.is_ascii_alphabetic() {
+                    break;
+                }
+            }
+        } else {
+            output.push(ch);
+        }
+    }
+    output
+}
+
 fn extract_ready_url(line: &str) -> Option<Url> {
-    let rest = line.trim().strip_prefix("dsh web:")?.trim();
+    let cleaned = strip_ansi(line);
+    let rest = cleaned.trim().strip_prefix("dsh web:")?.trim();
     let candidate = rest.split_whitespace().next()?;
     let parsed = Url::parse(candidate).ok()?;
     if parsed.scheme() != "http" || parsed.host_str() != Some("127.0.0.1") {
@@ -278,7 +274,7 @@ fn boot_dsh(app: &AppHandle, window: &WebviewWindow, dsh: &DshChild) -> Result<(
 
     eval_status(window, "");
 
-    let launch = resolve_dsh(&path)?;
+    let launch = dsh_launch::resolve(&path)?;
     let bundled = std::fs::read_to_string(dsh_home.join("profiles/web/package.json"))
         .ok()
         .is_some_and(|body| codex_connect::is_bundled(&body));
@@ -446,6 +442,11 @@ mod tests {
         assert_eq!(url.host_str(), Some("127.0.0.1"));
         assert_eq!(url.port(), Some(4123));
         assert_eq!(url.query(), Some("token=abc"));
+        let colored = extract_ready_url(
+            "dsh web: \u{1b}[32mhttp://127.0.0.1:4123/?token=abc\u{1b}[0m ready",
+        )
+        .unwrap();
+        assert_eq!(colored.query(), Some("token=abc"));
     }
 
     #[test]

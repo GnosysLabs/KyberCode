@@ -3,9 +3,8 @@ use serde_json::Value as Json;
 use serde_yaml::Value as Yaml;
 use std::collections::BTreeMap;
 use std::path::Path;
-use std::process::{Command, Stdio};
 
-use crate::DshLaunch;
+use crate::dsh_launch::{self, DshLaunch};
 
 pub const PACKAGE_NAME: &str = "dsh-codex-connect";
 pub const PACKAGE_SPEC: &str = "dsh-codex-connect@0.1.0-alpha.4.21";
@@ -73,30 +72,12 @@ pub fn ensure(dsh_home: &Path, path: &str, launch: &DshLaunch) -> Result<(), Str
 }
 
 fn install(dsh_home: &Path, path: &str, launch: &DshLaunch) -> Result<(), String> {
-    let mut command = match launch {
-        DshLaunch::Direct(binary) => {
-            let mut command = Command::new(binary);
-            command.args(["plugin", "--profile", "web", "add", PACKAGE_SPEC]);
-            command
-        }
-        DshLaunch::Npx(npx) => {
-            let mut command = Command::new(npx);
-            command.args([
-                "--yes",
-                "@deepseek-ai/dsh",
-                "plugin",
-                "--profile",
-                "web",
-                "add",
-                PACKAGE_SPEC,
-            ]);
-            command
-        }
-    };
-    let output = command
-        .env("DSH_HOME", dsh_home)
-        .env("PATH", path)
-        .stdin(Stdio::null())
+    let output = dsh_launch::command(
+        launch,
+        &["plugin", "--profile", "web", "add", PACKAGE_SPEC],
+        dsh_home,
+        path,
+    )
         .output()
         .map_err(|error| {
             format!(

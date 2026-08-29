@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 const LEGACY_BUNDLE_ID: &str = "com.kyber.app";
 
@@ -55,19 +56,69 @@ pub fn augmented() -> String {
 }
 
 pub fn find(name: &str, path: &str) -> Option<PathBuf> {
+    find_named(&command_names(name), path)
+}
+
+pub fn find_exe(name: &str, path: &str) -> Option<PathBuf> {
+    let names = if cfg!(windows) {
+        vec![format!("{name}.exe"), name.to_string()]
+    } else {
+        vec![name.to_string()]
+    };
+    find_named(&names, path)
+}
+
+fn find_named(names: &[String], path: &str) -> Option<PathBuf> {
     let sep = list_separator();
     for dir in path.split(sep) {
         if dir.is_empty() {
             continue;
         }
-        for candidate in command_names(name) {
-            let full = Path::new(dir).join(candidate);
+        for name in names {
+            let full = Path::new(dir).join(name);
             if full.is_file() {
                 return Some(full);
             }
         }
     }
     None
+}
+
+/// Hide the console that Windows allocates for `cmd` / `node` children.
+pub fn hide_window(#[allow(unused_variables)] command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+}
+
+/// JS entry next to an npm shim (`npx.cmd`, `dsh.cmd`) so we can spawn `node`
+/// instead of a `.cmd` file that opens Windows Terminal.
+pub fn node_cli_for_shim(shim: &Path) -> Option<PathBuf> {
+    node_cli_candidates(shim)
+        .into_iter()
+        .find(|candidate| candidate.is_file())
+}
+
+pub fn node_cli_candidates(shim: &Path) -> Vec<PathBuf> {
+    let Some(dir) = shim.parent() else {
+        return Vec::new();
+    };
+    let stem = shim
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    match stem.as_str() {
+        "dsh" => vec![dir.join("node_modules/@deepseek-ai/dsh/lib/bin.js")],
+        "npx" => vec![
+            dir.join("node_modules/npm/bin/npx-cli.js"),
+            dir.join("node_modules/npx/bin/npx-cli.js"),
+        ],
+        _ => Vec::new(),
+    }
 }
 
 pub fn legacy_dsh_home(home: &Path) -> PathBuf {
@@ -114,5 +165,21 @@ mod tests {
                 PathBuf::from("/Users/me/Library/Application Support/com.kyber.app/dsh")
             );
         }
+    }
+
+    #[test]
+    fn npx_shim_resolves_to_npx_cli_js() {
+        let dir = Path::new("/Program Files/nodejs");
+        let candidates = node_cli_candidates(&dir.join("npx.cmd"));
+        assert!(candidates.iter().any(|path| path.ends_with("node_modules/npm/bin/npx-cli.js")));
+    }
+
+    #[test]
+    fn dsh_shim_resolves_to_lib_bin_js() {
+        let dir = Path::new("/Users/me/AppData/Roaming/npm");
+        let candidates = node_cli_candidates(&dir.join("dsh.cmd"));
+        assert!(candidates
+            .iter()
+            .any(|path| path.ends_with("node_modules/@deepseek-ai/dsh/lib/bin.js")));
     }
 }

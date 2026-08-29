@@ -111,8 +111,10 @@ codesign --verify --deep --strict --verbose=2 "$APP"
 spctl --assess --type execute --verbose=4 "$APP"
 
 echo "==> Packing updater + download zip from the stapled app"
-APP_TAR="$UPDATER_DIR/$(basename "$APP").tar.gz"
-HUMAN_ZIP="$UPDATER_DIR/$(basename "$APP" .app).zip"
+# GitHub release assets cannot keep spaces — they become dots. Pack under
+# those names so latest.json URLs match the files people actually download.
+APP_TAR="$UPDATER_DIR/Kyber.Code.app.tar.gz"
+HUMAN_ZIP="$UPDATER_DIR/Kyber.Code.zip"
 COPYFILE_DISABLE=1 tar -C "$UPDATER_DIR" -czf "$APP_TAR" "$(basename "$APP")"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$HUMAN_ZIP"
 npx tauri signer sign "$APP_TAR"
