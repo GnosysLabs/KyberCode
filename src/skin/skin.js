@@ -201,6 +201,26 @@ function officialDeepSeekRow() {
   return null;
 }
 
+function dismissTestingNotice() {
+  var match =
+    /Internal Testing Notice|内测声明|remains in testing for Harness developers|面向 Harness 开发者/;
+  var nodes = document.querySelectorAll("h1, h2, h3, p, [class*='title']");
+  for (var i = 0; i < nodes.length; i += 1) {
+    if (!match.test(nodes[i].textContent || "")) {
+      continue;
+    }
+    var dialog =
+      nodes[i].closest('[class*="dialog"], [role="dialog"], [class*="overlay"], [class*="modal"]') ||
+      document;
+    clickLabeled(dialog, /^(Continue|继续)$/);
+    var root = document.getElementById("root");
+    if (root) {
+      root.inert = false;
+    }
+    return;
+  }
+}
+
 function flattenOfficialDefault() {
   var official = document.querySelector('[class*="GL8Viq_description"]');
   if (official && /DeepSeek|官方/.test(official.textContent || "")) {
@@ -494,6 +514,7 @@ function dress() {
   });
   document.querySelectorAll('[class*="cardWorkspaceTrigger"]').forEach(ensureCardDash);
   ensureStarfield();
+  dismissTestingNotice();
   flattenOfficialDefault();
   hushUnaddedDeepSeekModels();
   rewriteProviderCopy();

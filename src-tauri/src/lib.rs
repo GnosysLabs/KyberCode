@@ -15,6 +15,7 @@ use url::Url;
 
 mod codex_connect;
 mod dsh_launch;
+mod dsh_settings;
 mod host_path;
 
 #[cfg(target_os = "macos")]
@@ -261,6 +262,7 @@ fn boot_dsh(app: &AppHandle, window: &WebviewWindow, dsh: &DshChild) -> Result<(
     if !bundled && !launch.uses_npm() {
         eval_status(window, "Installing Codex Connect…");
     }
+    let _ = dsh_settings::acknowledge_welcome(&dsh_home.join("settings.yaml"));
     let _ = codex_connect::ensure(&dsh_home, &path, &launch);
     eval_status(window, "");
     let mut child = spawn_dsh(&dsh_home, &path, &launch).map_err(|error| {
@@ -451,6 +453,8 @@ mod tests {
         assert!(script.contains("themeCube"));
         assert!(script.contains("kyber-boot"));
         assert!(script.contains("kyber-throb"));
+        assert!(script.contains("Internal Testing Notice"));
+        assert!(script.contains("内测声明"));
         assert!(script.contains("color: white"));
         assert!(script.contains("background: #7b61ff !important"));
         assert!(!script.contains("padding-top: 52px"));

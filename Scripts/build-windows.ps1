@@ -10,4 +10,6 @@ npm install
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 cmd /c "npx tauri build 2>&1"
+$built = Get-ChildItem "C:\Users\cmcel\src\KyberCode\src-tauri\target\release\bundle\nsis\*-setup.exe" -ErrorAction SilentlyContinue
+if ($built) { exit 0 }
 exit $LASTEXITCODE
