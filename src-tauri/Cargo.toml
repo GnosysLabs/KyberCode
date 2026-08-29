@@ -1,6 +1,6 @@
 [package]
 name = "kyber"
-version = "0.1.4"
+version = "0.1.5"
 description = "Kyber Code desktop application"
 authors = ["Gnosys Labs"]
 edition = "2021"
