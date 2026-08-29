@@ -81,7 +81,7 @@ function ensureMark(host, className, src) {
     }
     return;
   }
-  host.appendChild(markImg(className, "Kyber", src));
+  host.appendChild(markImg(className, "Kyber Code", src));
 }
 
 var dashObserved = typeof WeakSet === "function" ? new WeakSet() : null;
@@ -370,19 +370,19 @@ function rewriteProviderCopy() {
   var replacements = [
     [
       "Configure the official DeepSeek provider to start building.",
-      "Add an API key for OpenRouter, DeepSeek, or another provider in Models."
+      "Add an API key in Models, or sign in to Codex under Plugins → Codex Connect."
     ],
     [
       "配置 DeepSeek 官方模型，即可开始使用。",
-      "在模型设置中为 OpenRouter、DeepSeek 或其他提供方添加 API 密钥。"
+      "在模型设置中添加 API 密钥，或到插件 → Codex Connect 登录 ChatGPT。"
     ],
     [
       "Enter your API keys to use models from the following providers.",
-      "Add an API key for OpenRouter, DeepSeek, or any other provider."
+      "Add an API key in Models, or sign in to Codex under Plugins → Codex Connect."
     ],
     [
       "填入各提供方的 API 密钥即可使用其模型。",
-      "为 OpenRouter、DeepSeek 或其他提供方填入 API 密钥即可使用其模型。"
+      "在模型设置中添加 API 密钥，或到插件 → Codex Connect 登录 ChatGPT。"
     ]
   ];
   document.querySelectorAll("p, h2").forEach(function (el) {
@@ -448,9 +448,9 @@ function rewriteHost(el) {
     return;
   }
   var next = (el.textContent || "")
-    .replace(/DeepSeek Harness/g, "Kyber")
-    .replace(/DSH Local Build/g, "Kyber")
-    .replace(/DeepSeek/g, "Kyber");
+    .replace(/DeepSeek Harness/g, "Kyber Code")
+    .replace(/DSH Local Build/g, "Kyber Code")
+    .replace(/DeepSeek/g, "Kyber Code");
   if (next !== el.textContent) {
     el.textContent = next;
   }
@@ -465,7 +465,7 @@ function dress() {
     .forEach(function (headline) {
       var hero = headline.querySelector(":scope > .kyber-hero-mark");
       if (!hero) {
-        headline.insertBefore(markImg("kyber-hero-mark", "Kyber", crystal), headline.firstChild);
+        headline.insertBefore(markImg("kyber-hero-mark", "Kyber Code", crystal), headline.firstChild);
         return;
       }
       if (hero.src !== crystal) {
@@ -501,7 +501,7 @@ function dress() {
     .querySelectorAll('[class*="fallbackBrandName"], [class*="wordmark"]')
     .forEach(rewriteHost);
   if (/DeepSeek/i.test(document.title) || document.title.trim() === "") {
-    document.title = "Kyber";
+    document.title = "Kyber Code";
   }
   if (document.body && !document.getElementById("kyber-window-drag")) {
     var drag = document.createElement("div");

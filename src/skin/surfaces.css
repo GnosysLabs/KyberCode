@@ -344,6 +344,17 @@
   line-height: 20px;
 }
 
+/* Codex Connect hardcodes color:white on --dsw-alias-brand-primary fills.
+   Kyber Code maps that token to ink, so the label vanishes unless we restyle. */
+button[style*="--dsw-alias-brand-primary"][style*="color: white"],
+button[style*="--dsw-alias-brand-primary"][style*="color:white"],
+a[style*="--dsw-alias-brand-primary"][style*="color: white"],
+a[style*="--dsw-alias-brand-primary"][style*="color:white"] {
+  background: #7b61ff !important;
+  border-color: #7b61ff !important;
+  color: #f2f0ff !important;
+}
+
 [class*="_dialog_"] {
   background: #12121a !important;
   border-color: rgba(123, 97, 255, 0.22) !important;

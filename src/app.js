@@ -14,7 +14,7 @@
       if (lockup) lockup.hidden = true;
       if (error) {
         error.hidden = false;
-        error.textContent = String(text ?? "Kyber failed to start.");
+        error.textContent = String(text ?? "Kyber Code failed to start.");
       }
     },
   };

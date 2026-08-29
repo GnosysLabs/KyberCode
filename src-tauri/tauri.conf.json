@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Kyber",
-  "version": "0.1.1",
-  "identifier": "com.kyber.app",
+  "productName": "Kyber Code",
+  "version": "0.1.2",
+  "identifier": "com.gnosyslabs.kybercode",
   "build": {
     "frontendDist": "../src"
   },
@@ -30,6 +30,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "Developer ID Application: Christopher McElvogue (4PDUNTF69S)"
+    }
   }
 }

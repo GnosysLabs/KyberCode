@@ -1,24 +1,31 @@
 #!/usr/bin/env bash
-# Cut a KyberCode release from the local machine.
+# Cut a Kyber Code release from the local machine.
 #
 # Usage: ./Scripts/release.sh <version> "<notes>"
 #   e.g. ./Scripts/release.sh 0.1.1 "Fixed blank General settings section."
 #
-# Builds the macOS (Apple Silicon) bundle, signs the updater artifacts with the
-# local key at ~/.tauri/kyber-updater.key, creates the GitHub release, and
-# uploads the bundle + latest.json updater feed.
+# Builds the macOS (Apple Silicon) bundle, signs it with Developer ID, notarizes
+# and staples it, signs the updater artifacts with the local key at
+# ~/.tauri/kyber-updater.key, creates the GitHub release, and uploads the
+# bundle + latest.json updater feed.
 #
 # Windows artifacts are added afterwards by ./Scripts/build-windows.sh, which
 # merges the windows-x86_64 entry into latest.json on the same release.
+#
+# Apple code signing is a different key from the Tauri updater key. This script
+# requires Developer ID Application in the login keychain and the notarytool
+# profile AC_NOTARY (same setup as Noise).
 
 set -euo pipefail
 
 REPO="GnosysLabs/KyberCode"
 KEY_FILE="$HOME/.tauri/kyber-updater.key"
 WIN_KEY_FILE="$HOME/.tauri/kyber-updater.key" # also shipped to the Windows builder by build-windows.sh
+APPLE_SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-Developer ID Application: Christopher McElvogue (4PDUNTF69S)}"
+NOTARY_PROFILE="${APPLE_KEYCHAIN_PROFILE:-AC_NOTARY}"
 
 VERSION="${1:?usage: release.sh <version> \"<notes>\"}"
-NOTES="${2:-Kyber $VERSION}"
+NOTES="${2:-Kyber Code $VERSION}"
 
 cd "$(dirname "$0")/.."
 
@@ -69,33 +76,66 @@ if ! git diff --cached --quiet; then
   git push origin HEAD
 fi
 
+echo "==> Checking Apple signing + notarization"
+export APPLE_SIGNING_IDENTITY
+export APPLE_TEAM_ID="${APPLE_TEAM_ID:-4PDUNTF69S}"
+if ! security find-identity -v -p codesigning | grep -F "$APPLE_SIGNING_IDENTITY" >/dev/null; then
+  echo "error: missing signing identity: $APPLE_SIGNING_IDENTITY" >&2
+  security find-identity -v -p codesigning >&2
+  exit 1
+fi
+xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" --output-format json >/dev/null
+
 echo "==> Building macOS bundle (aarch64)"
 export TAURI_SIGNING_PRIVATE_KEY="$(cat "$KEY_FILE")"
 export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
-npx tauri build --target aarch64-apple-darwin
+npx tauri build --target aarch64-apple-darwin --bundles app
 
 BUNDLE_DIR="src-tauri/target/aarch64-apple-darwin/release/bundle"
 UPDATER_DIR="$BUNDLE_DIR/macos"
-APP_TAR="$UPDATER_DIR/Kyber.app.tar.gz"
-APP_SIG="$APP_TAR.sig"
-if [ ! -f "$APP_TAR" ]; then
-  echo "error: updater artifact missing: $APP_TAR" >&2
+APP="$(find "$UPDATER_DIR" -maxdepth 1 -type d -name '*.app' -print -quit)"
+if [ -z "$APP" ] || [ ! -d "$APP" ]; then
+  echo "error: signed .app missing from $UPDATER_DIR" >&2
   ls "$UPDATER_DIR" >&2
+  exit 1
+fi
+
+echo "==> Notarizing $(basename "$APP")"
+NOTARY_ZIP="$(mktemp -t kyber-notarize).zip"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$NOTARY_ZIP"
+xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+rm -f "$NOTARY_ZIP"
+xcrun stapler staple "$APP"
+xcrun stapler validate "$APP"
+codesign --verify --deep --strict --verbose=2 "$APP"
+spctl --assess --type execute --verbose=4 "$APP"
+
+echo "==> Packing updater + download zip from the stapled app"
+APP_TAR="$UPDATER_DIR/$(basename "$APP").tar.gz"
+HUMAN_ZIP="$UPDATER_DIR/$(basename "$APP" .app).zip"
+COPYFILE_DISABLE=1 tar -C "$UPDATER_DIR" -czf "$APP_TAR" "$(basename "$APP")"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$HUMAN_ZIP"
+npx tauri signer sign "$APP_TAR"
+APP_SIG="$APP_TAR.sig"
+if [ ! -f "$APP_SIG" ]; then
+  echo "error: updater signature missing at $APP_SIG" >&2
   exit 1
 fi
 
 echo "==> Creating GitHub release $TAG"
 gh release create "$TAG" \
   --repo "$REPO" \
-  --title "Kyber $VERSION" \
+  --title "Kyber Code $VERSION" \
   --notes "$NOTES"
 
 echo "==> Uploading macOS artifacts"
-gh release upload "$TAG" "$APP_TAR" "$APP_SIG" --repo "$REPO" --clobber
+gh release upload "$TAG" "$APP_TAR" "$APP_SIG" "$HUMAN_ZIP" --repo "$REPO" --clobber
 
 PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 SIG="$(cat "$APP_SIG")"
-URL="https://github.com/$REPO/releases/download/$TAG/Kyber.app.tar.gz"
+APP_ASSET="$(basename "$APP_TAR")"
+APP_URL_ASSET="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$APP_ASSET")"
+URL="https://github.com/$REPO/releases/download/$TAG/$APP_URL_ASSET"
 
 cat > latest.json <<EOF
 {

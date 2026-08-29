@@ -49,7 +49,8 @@ ssh "$HOST" "del C:\\Users\\cmcel\\_kyber_signing.key"
 echo "==> Fetching Windows artifacts"
 rm -rf .release-win && mkdir -p .release-win
 scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/nsis/*-setup.exe" .release-win/ || true
-scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/nsis/*.zip" .release-win/ 2>/dev/null || true
+scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/nsis/*-setup.exe.sig" .release-win/ || true
+scp -q "$HOST:C:/Users/cmcel/src/KyberCode/src-tauri/target/release/bundle/msi/*.msi" .release-win/ || true
 ls .release-win/
 
 SETUP_EXE=$(find .release-win -name "*-setup.exe" | head -1)
@@ -62,12 +63,17 @@ if [ -z "$SETUP_EXE" ] || [ -z "$SETUP_SIG" ]; then
 fi
 
 echo "==> Uploading Windows artifacts"
-gh release upload "$TAG" "$SETUP_EXE" "$SETUP_SIG" --repo "$REPO" --clobber
+MSI=$(find .release-win -name "*.msi" | head -1)
+UPLOADS=("$SETUP_EXE" "$SETUP_SIG")
+if [ -n "$MSI" ]; then
+  UPLOADS+=("$MSI")
+fi
+gh release upload "$TAG" "${UPLOADS[@]}" --repo "$REPO" --clobber
 
 echo "==> Merging windows-x86_64 into latest.json"
 gh release download "$TAG" --repo "$REPO" --pattern latest.json --output .release-win/latest.json --clobber
 python3 - <<EOF
-import json, os, glob
+import json, os, glob, urllib.parse
 
 tag = "$TAG"
 win_dir = ".release-win"
@@ -80,7 +86,7 @@ with open(os.path.join(win_dir, "latest.json")) as f:
 
 feed["platforms"]["windows-x86_64"] = {
     "signature": open(sig_path).read().strip(),
-    "url": f"https://github.com/GnosysLabs/KyberCode/releases/download/{tag}/{os.path.basename(exe_path)}",
+    "url": f"https://github.com/GnosysLabs/KyberCode/releases/download/{tag}/{urllib.parse.quote(os.path.basename(exe_path))}",
 }
 
 with open(os.path.join(win_dir, "latest.json"), "w") as f:

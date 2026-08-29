@@ -6,12 +6,15 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use base64::Engine;
-use tauri::webview::PageLoadEvent;
+use tauri::webview::{NewWindowResponse, PageLoadEvent};
 use tauri_plugin_updater::UpdaterExt;
 use tauri::{
     AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
 };
 use url::Url;
+
+mod codex_connect;
+mod host_path;
 
 #[cfg(target_os = "macos")]
 use tauri::{LogicalPosition, TitleBarStyle};
@@ -71,22 +74,24 @@ fn kill_tree(child: &mut Child) {
     }
 }
 
-fn augmented_path() -> String {
-    let extras = ["/opt/homebrew/bin", "/usr/local/bin"];
-    let current = std::env::var("PATH").unwrap_or_default();
-    let mut parts: Vec<String> = extras.iter().map(|s| (*s).to_string()).collect();
-    for part in current.split(':') {
-        if !part.is_empty() && !parts.iter().any(|existing| existing == part) {
-            parts.push(part.to_string());
+fn resolve_dsh_home(app: &AppHandle) -> Result<PathBuf, String> {
+    let current = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("could not resolve app data dir: {error}"))?
+        .join("dsh");
+    if current.exists() {
+        return Ok(current);
+    }
+    if let Ok(home) = app.path().home_dir() {
+        let legacy = host_path::legacy_dsh_home(&home);
+        if legacy.exists() {
+            return Ok(legacy);
         }
     }
-    parts.join(":")
-}
-
-fn find_on_path(name: &str, path: &str) -> Option<PathBuf> {
-    path.split(':')
-        .map(|dir| Path::new(dir).join(name))
-        .find(|candidate| candidate.is_file())
+    std::fs::create_dir_all(&current)
+        .map_err(|error| format!("could not create DSH_HOME {}: {error}", current.display()))?;
+    Ok(current)
 }
 
 enum DshLaunch {
@@ -104,10 +109,10 @@ fn resolve_dsh(path: &str) -> Result<DshLaunch, String> {
             "DSH_BINARY is set but is not a file: {explicit}"
         ));
     }
-    if let Some(dsh) = find_on_path("dsh", path) {
+    if let Some(dsh) = host_path::find("dsh", path) {
         return Ok(DshLaunch::Direct(dsh));
     }
-    if let Some(npx) = find_on_path("npx", path) {
+    if let Some(npx) = host_path::find("npx", path) {
         return Ok(DshLaunch::Npx(npx));
     }
     Err(format!(
@@ -140,6 +145,38 @@ fn spawn_dsh(dsh_home: &Path, path: &str, launch: &DshLaunch) -> std::io::Result
         command.process_group(0);
     }
     command.spawn()
+}
+
+fn is_harness_url(url: &Url) -> bool {
+    match (url.scheme(), url.host_str()) {
+        ("tauri", _) => true,
+        ("http" | "https", Some("127.0.0.1" | "localhost" | "tauri.localhost")) => true,
+        _ => false,
+    }
+}
+
+fn open_in_browser(url: &str) {
+    #[cfg(target_os = "macos")]
+    let mut command = Command::new("open");
+    #[cfg(target_os = "linux")]
+    let mut command = Command::new("xdg-open");
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = Command::new("cmd");
+        command.args(["/C", "start", ""]);
+        command
+    };
+    let _ = command.arg(url).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn();
+}
+
+fn keep_or_handoff(url: &Url) -> bool {
+    if is_harness_url(url) {
+        return true;
+    }
+    if matches!(url.scheme(), "http" | "https") {
+        open_in_browser(url.as_str());
+    }
+    false
 }
 
 fn extract_ready_url(line: &str) -> Option<Url> {
@@ -236,18 +273,23 @@ fn pump_output(
 }
 
 fn boot_dsh(app: &AppHandle, window: &WebviewWindow, dsh: &DshChild) -> Result<(), String> {
-    let path = augmented_path();
-    let dsh_home = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("could not resolve app data dir: {error}"))?
-        .join("dsh");
-    std::fs::create_dir_all(&dsh_home)
-        .map_err(|error| format!("could not create DSH_HOME {}: {error}", dsh_home.display()))?;
+    let path = host_path::augmented();
+    let dsh_home = resolve_dsh_home(app)?;
 
     eval_status(window, "");
 
     let launch = resolve_dsh(&path)?;
+    let bundled = std::fs::read_to_string(dsh_home.join("profiles/web/package.json"))
+        .ok()
+        .is_some_and(|body| codex_connect::is_bundled(&body));
+    if !bundled {
+        eval_status(window, "Installing Codex Connect…");
+    }
+    if let Err(error) = codex_connect::ensure(&dsh_home, &path, &launch) {
+        eval_status(window, "");
+        return Err(error);
+    }
+    eval_status(window, "");
     let mut child = spawn_dsh(&dsh_home, &path, &launch).map_err(|error| {
         format!("failed to spawn dsh web: {error}\nInstall with:\n{DSH_INSTALL}")
     })?;
@@ -356,9 +398,14 @@ pub fn run() {
         .setup(move |app| {
             let builder =
                 WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                    .title("Kyber")
+                    .title("Kyber Code")
                     .inner_size(1280.0, 800.0)
-                    .initialization_script(&skin_script());
+                    .initialization_script(&skin_script())
+                    .on_navigation(keep_or_handoff)
+                    .on_new_window(|url, _features| {
+                        let _ = keep_or_handoff(&url);
+                        NewWindowResponse::Deny
+                    });
             // hidden_title/title_bar_style/traffic_light_position are macOS-only APIs.
             #[cfg(target_os = "macos")]
             let builder = builder
@@ -408,6 +455,13 @@ mod tests {
     }
 
     #[test]
+    fn harness_urls_stay_in_the_app() {
+        assert!(is_harness_url(&Url::parse("http://127.0.0.1:4123/?token=abc").unwrap()));
+        assert!(is_harness_url(&Url::parse("tauri://localhost/index.html").unwrap()));
+        assert!(!is_harness_url(&Url::parse("https://auth.openai.com/oauth/authorize").unwrap()));
+    }
+
+    #[test]
     fn skin_script_reskins_in_place_instead_of_bolting_a_logo_bar() {
         let script = skin_script();
         assert!(script.contains("--dsw-alias-bg-base"));
@@ -419,6 +473,8 @@ mod tests {
         assert!(script.contains("themeCube"));
         assert!(script.contains("kyber-boot"));
         assert!(script.contains("kyber-throb"));
+        assert!(script.contains("color: white"));
+        assert!(script.contains("background: #7b61ff !important"));
         assert!(!script.contains("padding-top: 52px"));
         assert!(!script.contains("kyber-chrome"));
     }
