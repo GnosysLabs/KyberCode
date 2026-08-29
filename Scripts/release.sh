@@ -22,6 +22,8 @@ NOTES="${2:-Kyber $VERSION}"
 
 cd "$(dirname "$0")/.."
 
+export PATH="$HOME/.cargo/bin:$PATH"
+
 if [ ! -f "$KEY_FILE" ]; then
   echo "error: updater key missing at $KEY_FILE" >&2
   exit 1
@@ -60,10 +62,12 @@ for path in ["src-tauri/tauri.conf.json", "src-tauri/Cargo.toml"]:
 EOF
 
 TAG="v$VERSION"
-echo "==> Committing version bump"
+echo "==> Committing version bump (skipped when already committed)"
 git add -A
-git commit -m "Release $VERSION" --quiet
-git push origin HEAD
+if ! git diff --cached --quiet; then
+  git commit -m "Release $VERSION" --quiet
+  git push origin HEAD
+fi
 
 echo "==> Building macOS bundle (aarch64)"
 export TAURI_SIGNING_PRIVATE_KEY="$(cat "$KEY_FILE")"
