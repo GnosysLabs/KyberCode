@@ -352,14 +352,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(move |app| {
-            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("Kyber")
-                .inner_size(1280.0, 800.0)
+            let builder =
+                WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                    .title("Kyber")
+                    .inner_size(1280.0, 800.0)
+                    .initialization_script(&skin_script());
+            // hidden_title/title_bar_style/traffic_light_position are macOS-only APIs.
+            #[cfg(target_os = "macos")]
+            let builder = builder
                 .hidden_title(true)
                 .title_bar_style(TitleBarStyle::Overlay)
-                .traffic_light_position(LogicalPosition::new(18.0, 18.0))
-                .initialization_script(&skin_script())
-                .build()?;
+                .traffic_light_position(LogicalPosition::new(18.0, 18.0));
+            let window = builder.build()?;
             start_harness(app.handle().clone(), window, Arc::clone(&dsh));
             start_updater(app.handle().clone());
             Ok(())

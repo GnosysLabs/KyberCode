@@ -1,0 +1,10 @@
+{
+  "version": "0.1.1",
+  "pub_date": "2026-08-29T10:29:09Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSQXNMYXBTbERZaStLS1ZJTWo2OVgxZ21tYTdzRFhkTDl5Q2hTK25yaXY1NmNBbEQxQ1JDaXRPU2t1M0c3OWRLQjhZSHJ6dUdOcE9tdVdqRUwrZkc3TzNsMEpTeTNBVXc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3OTk5MzQ2CWZpbGU6S3liZXIuYXBwLnRhci5negpIa2tlM3p3TFNybUt2R255Smd2SnIya0ZCa05wVEpRVGZqYjJXKy9oZUlwdUZBdFNoWCtTRnVUTVNTTzk2WjJMV1U3OGFCc1lOYUVjWWlGcVErTWNCQT09Cg==",
+      "url": "https://github.com/GnosysLabs/KyberCode/releases/download/v0.1.1/Kyber.app.tar.gz"
+    }
+  }
+}
