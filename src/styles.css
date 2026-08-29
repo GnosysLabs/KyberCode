@@ -1,6 +1,10 @@
 :root {
-  color-scheme: light;
-  background: #e8e6df;
+  color-scheme: dark;
+  --void: #07070b;
+  --violet: #7b61ff;
+  --magenta: #ff4dff;
+  --coral: #ff8a50;
+  background: var(--void);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -21,17 +25,21 @@ body,
 }
 
 body {
-  background: #e8e6df;
+  background: var(--void);
 }
 
 .app-frame {
   position: relative;
   display: grid;
   place-items: center;
-  background: #e8e6df;
+  background:
+    radial-gradient(ellipse 46% 38% at 36% 48%, rgba(123, 97, 255, 0.16), transparent 70%),
+    radial-gradient(ellipse 36% 32% at 56% 52%, rgba(255, 77, 255, 0.1), transparent 68%),
+    radial-gradient(ellipse 30% 26% at 74% 58%, rgba(255, 138, 80, 0.08), transparent 66%),
+    radial-gradient(ellipse 90% 80% at 50% 50%, #0c0c12, var(--void));
   box-shadow:
-    inset 0 0 0 1px rgba(28, 27, 25, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    inset 0 0 0 1px rgba(123, 97, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 
 .window-drag-region {
@@ -45,44 +53,17 @@ body {
 
 .brand-lockup {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  transform: translateY(-26px);
-  color: #1c1b19;
+  justify-content: center;
+  transform: translateY(-10px);
   user-select: none;
   -webkit-user-select: none;
 }
 
 .kyber-mark {
-  width: 21px;
-  height: 21px;
-  margin-bottom: 11px;
-  overflow: visible;
-  fill: none;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-}
-
-.kyber-mark__diamond {
-  stroke: rgba(28, 27, 25, 0.48);
-  stroke-width: 1;
-}
-
-.kyber-mark__facet {
-  stroke: rgba(28, 27, 25, 0.22);
-  stroke-width: 0.8;
-}
-
-.kyber-mark__accent {
-  stroke: #c4b5fd;
-  stroke-width: 1.15;
-}
-
-h1 {
-  margin: 0;
-  font-family: "New York", ui-serif, "Iowan Old Style", Palatino, Georgia, serif;
-  font-size: 38px;
-  font-weight: 550;
-  line-height: 1;
-  letter-spacing: 0.025em;
+  display: block;
+  width: min(256px, 42vw);
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 0 28px rgba(123, 97, 255, 0.18));
 }
