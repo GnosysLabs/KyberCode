@@ -187,66 +187,56 @@ fn skin_script() -> String {
     format!(
         r##"(function () {{
   try {{
-    if (location.hostname !== '127.0.0.1') return;
+    if (location.hostname !== '127.0.0.1' || window.__KYBER_SKIN__) return;
+    window.__KYBER_SKIN__ = true;
     var LOGO = {logo};
-    function ensureDark() {{
-      document.documentElement.setAttribute('data-ds-dark-theme', '');
-      if (document.body) document.body.setAttribute('data-ds-dark-theme', '');
-    }}
-    function ensureSkin() {{
-      if (document.getElementById('kyber-skin')) return;
-      var style = document.createElement('style');
-      style.id = 'kyber-skin';
-      style.textContent = [
-        'html, body {{ background: #07070b !important; color-scheme: dark; }}',
-        'body {{ padding-top: 52px !important; }}',
-        'html, body, body[data-ds-dark-theme] {{',
-        '  --dsw-alias-bg-base: #07070b;',
-        '  --dsw-alias-bg-layer-1: #0c0c12;',
-        '  --dsw-alias-bg-layer-2: #12121a;',
-        '  --dsw-alias-bg-layer-3: #181822;',
-        '  --dsw-alias-bg-module-platform: #0c0c12;',
-        '  --dsw-alias-bg-overlay: #1a1a24;',
-        '  --dsw-specific-sidebar-fill: #07070b;',
-        '  --dsw-specific-sidebar-nav-item-active: #16161f;',
-        '  --dsw-specific-sidebar-nav-item-hover: #101018;',
-        '  --dsw-specific-bubble: #12121a;',
-        '  --dsw-specific-bubble-highlight: #1a1428;',
-        '  --dsw-specific-input-major: #12121a;',
-        '  --dsw-specific-selector: #12121a;',
-        '  --dsw-specific-menu: #12121a;',
-        '  --dsw-alias-button-info-fill: #7b61ff;',
-        '  --dsw-alias-button-info-hover: #ff4dff;',
-        '  --dsw-alias-state-business-primary: #7b61ff;',
-        '  --dsw-alias-state-business-tertiary: #1a1428;',
-        '  --dsw-static-deepseek-400: #9a6bff;',
-        '  --dsw-static-deepseek-450: #7b61ff;',
-        '  --dsw-static-deepseek-500: #7b61ff;',
-        '  --dsw-alias-brand-primary-new-colorprimary-new-color: #7b61ff;',
-        '}}',
-        '#kyber-chrome {{',
-        '  position: fixed; top: 0; left: 0; right: 0; height: 52px;',
-        '  z-index: 2147483647; display: flex; align-items: center;',
-        '  padding: 0 16px 0 86px; background: #07070b;',
-        '  box-shadow: inset 0 -1px 0 rgba(123, 97, 255, 0.16);',
-        '}}',
-        '#kyber-chrome [data-tauri-drag-region] {{',
-        '  position: absolute; inset: 0 0 0 86px;',
-        '}}',
-        '#kyber-chrome img {{',
-        '  position: relative; z-index: 1; height: 22px; width: auto;',
-        '  pointer-events: none; user-select: none;',
-        '}}',
-        '[class*="EmptyState"] svg, [class*="empty-state"] svg,',
-        '[class*="Welcome"] svg, [class*="lockup"] svg,',
-        '[class*="stone"] svg, [class*="diamond"] svg {{ display: none !important; }}',
-        '[style*="254, 245, 231"], [style*="#fef5e7"], [style*="#FEF5E7"] {{',
-        '  background: #07070b !important;',
-        '}}'
-      ].join('\\n');
-      (document.head || document.documentElement).appendChild(style);
-    }}
-    function ensureChrome() {{
+    var style = document.createElement('style');
+    style.id = 'kyber-skin';
+    style.textContent = [
+      'html, body {{ background: #07070b !important; color-scheme: dark !important; }}',
+      'html {{ color-scheme: dark !important; }}',
+      'body {{ padding-top: 52px !important; }}',
+      'html, body, body[data-ds-dark-theme] {{',
+      '  --dsw-alias-bg-base: #07070b;',
+      '  --dsw-alias-bg-layer-1: #0c0c12;',
+      '  --dsw-alias-bg-layer-2: #12121a;',
+      '  --dsw-alias-bg-layer-3: #181822;',
+      '  --dsw-alias-bg-module-platform: #0c0c12;',
+      '  --dsw-alias-bg-overlay: #1a1a24;',
+      '  --dsw-specific-sidebar-fill: #07070b;',
+      '  --dsw-specific-sidebar-nav-item-active: #16161f;',
+      '  --dsw-specific-sidebar-nav-item-hover: #101018;',
+      '  --dsw-specific-bubble: #12121a;',
+      '  --dsw-specific-bubble-highlight: #1a1428;',
+      '  --dsw-specific-input-major: #12121a;',
+      '  --dsw-specific-selector: #12121a;',
+      '  --dsw-specific-menu: #12121a;',
+      '  --dsw-alias-button-info-fill: #7b61ff;',
+      '  --dsw-alias-button-info-hover: #ff4dff;',
+      '  --dsw-alias-state-business-primary: #7b61ff;',
+      '  --dsw-alias-state-business-tertiary: #1a1428;',
+      '  --dsw-static-deepseek-400: #9a6bff;',
+      '  --dsw-static-deepseek-450: #7b61ff;',
+      '  --dsw-static-deepseek-500: #7b61ff;',
+      '  --dsw-alias-brand-primary-new-colorprimary-new-color: #7b61ff;',
+      '}}',
+      '#kyber-chrome {{',
+      '  position: fixed; top: 0; left: 0; right: 0; height: 52px;',
+      '  z-index: 2147483647; display: flex; align-items: center;',
+      '  padding: 0 16px 0 86px; background: #07070b;',
+      '  box-shadow: inset 0 -1px 0 rgba(123, 97, 255, 0.16);',
+      '  pointer-events: none;',
+      '}}',
+      '#kyber-chrome [data-tauri-drag-region] {{',
+      '  position: absolute; inset: 0 0 0 86px; pointer-events: auto;',
+      '}}',
+      '#kyber-chrome img {{',
+      '  position: relative; z-index: 1; height: 22px; width: auto;',
+      '  pointer-events: none; user-select: none;',
+      '}}'
+    ].join('\\n');
+    (document.head || document.documentElement).appendChild(style);
+    function mountChrome() {{
       if (document.getElementById('kyber-chrome') || !document.body) return;
       var bar = document.createElement('div');
       bar.id = 'kyber-chrome';
@@ -257,24 +247,10 @@ fn skin_script() -> String {
       img.alt = 'Kyber';
       bar.appendChild(drag);
       bar.appendChild(img);
-      document.body.insertBefore(bar, document.body.firstChild);
+      document.body.appendChild(bar);
     }}
-    function apply() {{
-      ensureDark();
-      ensureSkin();
-      ensureChrome();
-    }}
-    apply();
-    document.addEventListener('DOMContentLoaded', apply);
-    if (!window.__KYBER_SKIN_OBS__) {{
-      window.__KYBER_SKIN_OBS__ = true;
-      new MutationObserver(apply).observe(document.documentElement, {{
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['data-ds-dark-theme']
-      }});
-    }}
+    mountChrome();
+    document.addEventListener('DOMContentLoaded', mountChrome);
   }} catch (e) {{}}
 }})();"##,
         logo = js_string(&logo)
@@ -343,10 +319,9 @@ fn boot_dsh(app: &AppHandle, window: &WebviewWindow, dsh: &DshChild) -> Result<(
             window
                 .navigate(url)
                 .map_err(|error| format!("failed to load the dsh GUI: {error}"))?;
-            for _ in 0..20 {
-                thread::sleep(Duration::from_millis(250));
-                let _ = window.eval(&skin_script());
-            }
+            let _ = window.eval(&skin_script());
+            thread::sleep(Duration::from_millis(800));
+            let _ = window.eval(&skin_script());
             return Ok(());
         }
 
